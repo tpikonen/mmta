@@ -1,0 +1,73 @@
+#!/bin/sh
+
+SCRIPTS=./
+
+# Check if a given username is in /etc/passwd 
+# and the users shell is in /etc/shells
+check_username()
+{
+    USERSHELL=`grep "^${1}:" /etc/passwd | cut -d: -f7`
+    [ -n "$USERSHELL" ] || return 1
+    grep -v '^#' /etc/shells | grep -q $USERSHELL
+    return $?
+}
+
+echo "Allparams: $@"
+
+FIRSTREC=""
+while PAR="$1"; shift ; do
+    case $PAR in 
+        -F*)
+            echo "Fullname" ;;
+        -f*)
+            echo "Another fullname" ;;
+        -i)
+            echo "Ignore dotlines" ;;
+        --) 
+            FIRSTREC="$1"
+            shift
+            break 2 ;;
+        -*)
+            echo "some parameter: $PAR" ;;
+        *)
+            FIRSTREC=$PAR
+            break 2 ;;
+    esac
+done
+
+RECIPIENTS="$FIRSTREC"
+while PAR="$1"; shift ; do
+    RECIPIENTS="$RECIPIENTS:$PAR"
+done
+
+TEMPF=`tempfile`
+if [ "$?" != "0" ] ; then 
+    echo "Could not create a temporary file"
+    return 1
+fi
+
+SENDER=`whoami`
+DATE=`date`
+echo "From $SENDER  $DATE" > $TEMPF
+cat >> $TEMPF
+# From_ quoting, is it necessary?
+#sed 's/^\(>*From \)/>\1/' >> $TEMPF
+echo >> $TEMPF
+
+cat $TEMPF
+
+echo "/// Starting delivery ///"
+
+echo "|${RECIPIENTS}|" 
+REST=$RECIPIENTS 
+REC1="#"
+until [ $REST = $REC1 ]; do 
+    REC1=${REST%%:*} 
+    REST=${REST#*:} 
+    if check_username $REC1 ; then
+        $SCRIPTS/cat-mail $REC1 $TEMPF
+    else
+        echo "Invalid user: $REC1"
+    fi
+done
+rm -f $TEMPF

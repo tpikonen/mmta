@@ -12,6 +12,46 @@ check_username()
     return $?
 }
 
+
+was_processed()
+{
+    USRNAME=$1
+    PLIST=$2
+    P="#"
+    while [ $PLIST != $P ] ; do
+        P=${PLIST%%,*}
+        PLIST=${PLIST#*,}
+        if [ $USRNAME = $P ] ; then
+            echo "looploop"
+            return 1
+        fi
+    done
+    return 0
+}
+
+get_aliases()
+{
+    $USER=$1
+        
+
+}
+
+
+resolve_aliases()
+{
+    INLIST=$1
+    PIPELIST=""
+    FILELIST=""
+    INETLIST=""
+    INCLLIST=""
+    LOCLIST=""
+    PROCESSED=$2
+
+    while 
+
+
+}
+
 echo "Allparams: $@"
 
 FIRSTREC=""

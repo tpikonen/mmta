@@ -1,6 +1,7 @@
 #!/bin/sh
 
 SCRIPTS=./
+ALIST=""
 
 # Check if a given username is in /etc/passwd 
 # and the users shell is in /etc/shells
@@ -13,63 +14,172 @@ check_username()
 }
 
 
-was_processed()
+# contains $A $LIST returns 0 if $LIST contains $A
+contains()
 {
-    USRNAME=$1
+    local ITEM PLIST P
+    ITEM=$1
     PLIST=$2
-    P="#"
-    while [ $PLIST != $P ] ; do
+    P=""
+    while [ "$PLIST" != "$P" ] ; do
         P=${PLIST%%,*}
         PLIST=${PLIST#*,}
-        if [ $USRNAME = $P ] ; then
-            echo "looploop"
-            return 1
+        if [ "$ITEM" = "$P" ] ; then
+            return 0
         fi
     done
-    return 0
+    return 1
 }
 
 get_aliases()
 {
-    $USER=$1
-        
-
+    local UNAME AFILE
+    UNAME=$1
+    AFILE=./aliases
+    grep -v '^#' $AFILE | sed -n "
+/^$UNAME:/ {
+    s/\\\\$// ; h ; t sawslash
+    :loop
+    n
+    s/^\S// ; t exit
+    s/\\\\$// ; H ; $ b exit
+    t sawslash
+    b loop
+    :sawslash
+    n
+    s/\\\\$// ; H ; $ b exit
+    t sawslash
+    b loop
+    :exit
+    x
+    s/\n//g
+    s/$UNAME:\s*//
+    s/\s*,\s*/,/g
+    s/,$//
+    p
+}"
+    return 1
 }
 
 
 resolve_aliases()
 {
-    INLIST=$1
-    PIPELIST=""
-    FILELIST=""
-    INETLIST=""
-    INCLLIST=""
-    LOCLIST=""
-    PROCESSED=$2
+    local USER PROCESSED A ALIST
+    USER=$1
+    PROCESSED=$1
+    AL_LOCLIST=""
+    AL_INETLIST=""
+    AL_PIPELIST=""
+    AL_FILELIST=""
+    AL_INCLIST=""
 
-    while 
-
-
+    ALIST=$(get_aliases $USER)
+    A=""
+    while [ "$A" != "$ALIST" ] ; do
+        A=${ALIST%%,*}
+        ALIST=${ALIST#*,}
+        if contains $A $PROCESSED ; then
+            echo "Warning: aliases file contains a loop with user $A" 1>&2
+            continue
+        fi
+        case "$A" in
+            /*) # Filename
+                AL_FILELIST="$AL_FILELIST,$A"
+                ;;
+            \|*) # Pipe
+                AL_PIPELIST="$AL_PIPELIST,$A"
+                ;;
+            :*) # Include file
+                AL_INCLIST="$AL_INCLIST,$A"
+                ;;
+            *@*) # Inet mailaddress
+                AL_INETLIST="$AL_INETLIST,$A" ;;
+            *) # Local address?
+                LIST=$(get_aliases $A)
+                if [ -n "$LIST" ] ; then
+                    ALIST="$LIST,$ALIST"
+                    PROCESSED="$PROCESSED,$A"
+                else
+                    if check_username "$A" ; then
+                        AL_LOCLIST="$AL_LOCLIST,$A"
+                    else
+                        echo "Warning, $USER expands to an invalid user $A" 1>&2
+                    fi
+                fi
+                ;;
+        esac
+    done
+    AL_LOCLIST=${AL_LOCLIST#,}
+    AL_INETLIST=${AL_INETLIST#,}
+    AL_PIPELIST=${AL_PIPELIST#,}
+    AL_FILELIST=${AL_FILELIST#,}
+    AL_INCLIST=${AL_INCLIST#,}
+#        echo "AL_LOCLIST: $AL_LOCLIST"
+#        echo "AL_INETLIST: $AL_INETLIST"
+#        echo "AL_PIPELIST: $AL_PIPELIST"
+#        echo "AL_FILELIST: $AL_FILELIST"
+#        echo "AL_INCLIST: $AL_INCLIST"
+    if [ -z "$AL_LOCLIST" ] ; then
+        AL_LOCLIST=$USER
+    fi
+    echo "$AL_LOCLIST"
+    return 1
 }
 
-echo "Allparams: $@"
+#echo "Allparams: $@"
 
+#ALIST=$(get_aliases root)
+#echo $ALIST
+
+resolve_aliases tpikonen
+exit 0
+
+# Mail errors to sender by default
+MAIL_ERRORS=1
+# Don't deliver to sender, if the sender address is found after alias expansion
+SEND_TO_SELF=0
 FIRSTREC=""
 while PAR="$1"; shift ; do
     case $PAR in 
-        -F*)
-            echo "Fullname" ;;
-        -f*)
-            echo "Another fullname" ;;
-        -i)
-            echo "Ignore dotlines" ;;
-        --) 
+        # sendmail options defined in LSB:
+        -bm) # Read msg from stdin, default
+            ;;
+        -bp) # list mail-queue info,
+             # maybe implement this with in external mailer helper script?
+            ;;
+        -bs) # Read and write raw SMTP protocol, unsupported
+            exit 1
+            ;;
+        -F*) # Set the full name of the sender
+            # not implemented yet
+            ;;
+        -f*) # Set the from address (if msg does not contain From: -field)
+            # not implemented yet
+            ;;
+        -i|-oi) # Don't terminate reading input after a line with a single dot
+            # not implemented yet
+            ;;
+        -odb) # Deliver mail in background, ignored
+            ;;
+        -odf) # Deliver mail in foreground, default for local delivery,
+              # otherwise ignored
+            ;;
+        -oem|-em) # Mail errors back to sender, default
+            MAIL_ERRORS=1 ;;
+        -oep|-ep) # Write errors to stderr
+            MAIL_ERRORS=0 ;;
+        -om) # Mail a copy to sender if sender appears in alias expansion
+            SEND_TO_SELF=1 ;;
+        -t) # Parse To:, Cc: and Bcc: header from msg to obtain recipients
+            exit 1 # unsupported
+            ;;
+        --) # Start parsing recipients
             FIRSTREC="$1"
             shift
             break 2 ;;
         -*)
-            echo "some parameter: $PAR" ;;
-        *)
+            echo "Warning: Ignoring unknown parameter $PAR" 1>&2 ;;
+        *) # Already at first recipient
             FIRSTREC=$PAR
             break 2 ;;
     esac
@@ -77,7 +187,7 @@ done
 
 RECIPIENTS="$FIRSTREC"
 while PAR="$1"; shift ; do
-    RECIPIENTS="$RECIPIENTS:$PAR"
+    RECIPIENTS="$RECIPIENTS,$PAR"
 done
 
 TEMPF=`tempfile`

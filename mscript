@@ -3,18 +3,42 @@
 SCRIPTS=./
 ALIST=""
 
+# filterlist $PRED $LIST
+# Filter out elements from a comma separated $LIST for which not $PRED elem
+filterlist ()
+{
+    local PRED LIST A ALIST OUTLIST
+    PRED=$1
+    LIST=$2
+    A=""
+    ALIST=$LIST
+    OUTLIST=""
+    while [ "$A" != "$ALIST" ] ; do
+        A=${ALIST%%,*}
+        ALIST=${ALIST#*,}
+        if $PRED $A ; then
+            OUTLIST="$OUTLIST,$A"
+        fi
+    done
+    OUTLIST=${OUTLIST#,}
+    echo $OUTLIST
+}
+
 # Check if a given username is in /etc/passwd 
 # and the users shell is in /etc/shells
 check_username()
 {
-    USERSHELL=`grep "^${1}:" /etc/passwd | cut -d: -f7`
+    local PWFILE USERSHELL
+    PWFILE="./passwd"
+    USERSHELL=`grep "^${1}:" ${PWFILE} | cut -d: -f7`
     [ -n "$USERSHELL" ] || return 1
     grep -v '^#' /etc/shells | grep -q $USERSHELL
     return $?
 }
 
 
-# contains $A $LIST returns 0 if $LIST contains $A
+# contains $A $LIST 
+# returns 0 if $LIST contains $A
 contains()
 {
     local ITEM PLIST P
@@ -84,14 +108,11 @@ resolve_aliases()
         fi
         case "$A" in
             /*) # Filename
-                AL_FILELIST="$AL_FILELIST,$A"
-                ;;
+                AL_FILELIST="$AL_FILELIST,$A" ;;
             \|*) # Pipe
-                AL_PIPELIST="$AL_PIPELIST,$A"
-                ;;
+                AL_PIPELIST="$AL_PIPELIST,$A" ;;
             :*) # Include file
-                AL_INCLIST="$AL_INCLIST,$A"
-                ;;
+                AL_INCLIST="$AL_INCLIST,$A" ;;
             *@*) # Inet mailaddress
                 AL_INETLIST="$AL_INETLIST,$A" ;;
             *) # Local address?
@@ -100,13 +121,8 @@ resolve_aliases()
                     ALIST="$LIST,$ALIST"
                     PROCESSED="$PROCESSED,$A"
                 else
-                    if check_username "$A" ; then
-                        AL_LOCLIST="$AL_LOCLIST,$A"
-                    else
-                        echo "Warning, $USER expands to an invalid user $A" 1>&2
-                    fi
-                fi
-                ;;
+                    AL_LOCLIST="$AL_LOCLIST,$A"
+                fi ;;
         esac
     done
     AL_LOCLIST=${AL_LOCLIST#,}
@@ -126,13 +142,14 @@ resolve_aliases()
     return 1
 }
 
-#echo "Allparams: $@"
+echo "Allparams: $@"
 
-#ALIST=$(get_aliases root)
-#echo $ALIST
+#filterlist check_username "tpikonen,jorma,root,mythtv,daniel,keimo,kaino"
+#echo $?
+#exit 1
 
-resolve_aliases tpikonen
-exit 0
+#resolve_aliases root
+#exit 0
 
 # Mail errors to sender by default
 MAIL_ERRORS=1
@@ -190,6 +207,30 @@ while PAR="$1"; shift ; do
     RECIPIENTS="$RECIPIENTS,$PAR"
 done
 
+ALIST=$RECIPIENTS
+A=""
+INET_RECV=""
+LOC_RECV=""
+HOSTNAME=$(hostname)
+while [ "$A" != "$ALIST" ] ; do
+    A=${ALIST%%,*}
+    ALIST=${ALIST#*,}
+    R=${A%%@localhost*}
+    R=${R%%@$HOSTNAME}
+    case $R in 
+        *@*)
+            INET_RECV="$INET_RECV,$R" ;;
+        *)
+            resolve_aliases $R
+            LOC_RECV="$LOC_RECV,$AL_LOCLIST" ;;
+    esac
+done
+INET_RECV=${INET_RECV#,}
+LOC_RECV=$(filterlist check_username ${LOC_RECV#,})
+
+echo "INET_RECV $INET_RECV"
+echo "LOC_RECV $LOC_RECV"
+
 TEMPF=`tempfile`
 if [ "$?" != "0" ] ; then 
     echo "Could not create a temporary file"
@@ -198,7 +239,7 @@ fi
 
 SENDER=`whoami`
 DATE=`date`
-echo "From $SENDER  $DATE" > $TEMPF
+echo "From $SENDER $DATE" > $TEMPF
 cat >> $TEMPF
 # From_ quoting, is it necessary?
 #sed 's/^\(>*From \)/>\1/' >> $TEMPF
@@ -206,18 +247,16 @@ echo >> $TEMPF
 
 cat $TEMPF
 
+#exit 0
 echo "/// Starting delivery ///"
 
-echo "|${RECIPIENTS}|" 
-REST=$RECIPIENTS 
-REC1="#"
-until [ $REST = $REC1 ]; do 
-    REC1=${REST%%:*} 
-    REST=${REST#*:} 
-    if check_username $REC1 ; then
-        $SCRIPTS/cat-mail $REC1 $TEMPF
-    else
-        echo "Invalid user: $REC1"
-    fi
+echo "|${LOC_RECV}|" 
+ALIST=$LOC_RECV
+A=""
+while [ "$A" != "$ALIST" ]; do 
+    A=${ALIST%%r,*} 
+    ALIST=${ALIST#*,} 
+    echo $A
+    $SCRIPTS/mscript-helper cat-mail $A $TEMPF
 done
 rm -f $TEMPF

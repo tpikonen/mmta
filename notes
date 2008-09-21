@@ -1,0 +1,7 @@
+suid helper must do:
+* cat mail to /var/mail/user
+* cat ~/.forward file
+* execute actions from ./forward file, but only those actions, as user
+* check if user can send mail with msmtp
+* place mails in users msmtp queue
+* trigger a msmtp delivery attempt with user privileges

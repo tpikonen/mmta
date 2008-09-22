@@ -1,7 +1,18 @@
 suid helper must do:
 * cat mail to /var/mail/user
 * cat ~/.forward file
-* execute actions from ./forward file, but only those actions, as user
-* check if user can send mail with msmtp
-* place mails in users msmtp queue
+* execute a given line (mail destination) from ./forward file
+  when given mail in stdin (no comments allowed in .forward, 
+  one destination per line)
+* check if user can send mail with msmtp (run msmtp -P with user privs)
+* place mails in users msmtp queue (mail queue in /var/mail/user.mailq,
+  not in user homedir, this is to prevent overfilling quota)
 * trigger a msmtp delivery attempt with user privileges
+* Name of the program: mmda ("minimal mail delivery agent")
+* Commands:
+    mmda cat-mail user
+    mmda cat-forward user
+    mmda run-forward user lineno
+    mmda can-send user
+    mmda queue-mail user
+    mmda run-queue user

@@ -97,7 +97,12 @@ void mboxmail(const char *uname, const char *homedir)
     execprog(argv, uname, homedir);
 }
 
-
+/* Output users' ~/.forward file to stdout
+ * Return values:
+ * 0 if file exists, is owned by user or root and can be read 
+ * 1 if the file does not exist, or is not owned by user or root
+ * 2 if there's some other error
+ */
 void catforward(int uid, const char *homedir)
 {
     char fwdname[SLEN];
@@ -110,14 +115,13 @@ void catforward(int uid, const char *homedir)
     strncat(fwdname, "/.forward", 10);
     statret = stat(fwdname, &ss);
     if((statret != 0) || ((ss.st_uid != uid) && (ss.st_uid != 0))) {
-        /* .forward does not exist or not owned by user or root */
-        exit(0);
+        /* .forward does not exist or is not owned by user or root */
+        exit(1);
     }
 
     fd = open(fwdname, O_RDONLY);
     if(fd < 3) {
-        /* Fail silently if file cannot be read */
-        exit(0);
+        exit(2);
     }
     while((nread = read(fd, buf, BUFSIZE)) > 0) {
         nwritten = 0;
@@ -125,12 +129,12 @@ void catforward(int uid, const char *homedir)
             int nout;
             nout = write(1, buf, nread-nwritten);
             if(nout < 0) /* write error */
-                exit(1);
+                exit(2);
             nwritten += nout;
         }
     }
     if(nread < 0) { /* read error */
-        exit(1);
+        exit(2);
     }
     exit(0);
 }

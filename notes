@@ -10,9 +10,14 @@ suid helper must do:
 * trigger a msmtp delivery attempt with user privileges
 * Name of the program: mmda ("minimal mail delivery agent")
 * Commands:
-    mmda cat-mail user
-    mmda cat-forward user
-    mmda run-forward user lineno
-    mmda can-send user
-    mmda queue-mail user
-    mmda run-queue user
+    mmda user mbox (or maildir)
+    mmda user cat-forward
+    mmda user run-forward lineno
+    mmda user can-send
+    mmda user queue-mail
+    mmda user run-queue
+* Maybe have a configuration file for 'can-send', 'queue-mail' and 'run-queue'
+  commands
+* Make cron script which runs every half-hour and for each user, runs 
+  + 'mmda can-send' to check if user can send mail
+  + If yes, runs 'mmda run-queue'

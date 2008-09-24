@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SCRIPTS=./
+SCRIPTS=./src
 ALIST=""
 
 # filterlist $PRED $LIST
@@ -37,13 +37,13 @@ check_username()
 }
 
 
-# contains $A $LIST 
+# contains $LIST $A
 # returns 0 if $LIST contains $A
 contains()
 {
-    local ITEM PLIST P
-    ITEM=$1
-    PLIST=$2
+    local PLIST ITEM P
+    PLIST=$1
+    ITEM=$2
     P=""
     while [ "$PLIST" != "$P" ] ; do
         P=${PLIST%%,*}
@@ -102,7 +102,7 @@ resolve_aliases()
     while [ "$A" != "$ALIST" ] ; do
         A=${ALIST%%,*}
         ALIST=${ALIST#*,}
-        if contains $A $PROCESSED ; then
+        if contains $PROCESSED $A ; then
             echo "Warning: aliases file contains a loop with user $A" 1>&2
             continue
         fi
@@ -225,11 +225,13 @@ while [ "$A" != "$ALIST" ] ; do
             LOC_RECV="$LOC_RECV,$AL_LOCLIST" ;;
     esac
 done
-INET_RECV=${INET_RECV#,}
-LOC_RECV=$(filterlist check_username ${LOC_RECV#,})
+# Remove dups, check if local usernames are valid
+INET_RECV=$(echo ${INET_RECV#,} | tr ',' '\n' | sort | uniq | tr '\n' ',')
+LOC_RECV=$(echo ${LOC_RECV#,} | tr ',' '\n' | sort | uniq | tr '\n' ',')
+LOC_RECV=$(filterlist check_username ${LOC_RECV})
 
-echo "INET_RECV $INET_RECV"
-echo "LOC_RECV $LOC_RECV"
+echo "INET_RECV: $INET_RECV"
+echo "LOC_RECV: $LOC_RECV"
 
 TEMPF=`tempfile`
 if [ "$?" != "0" ] ; then 
@@ -247,16 +249,55 @@ echo >> $TEMPF
 
 cat $TEMPF
 
-#exit 0
+# Should do delivery of supplied inet addresses first
 echo "/// Starting delivery ///"
-
+# Local delivery
 echo "|${LOC_RECV}|" 
+LOCAL_SENT=""
 ALIST=$LOC_RECV
 A=""
 while [ "$A" != "$ALIST" ]; do 
-    A=${ALIST%%r,*} 
+    A=${ALIST%%,*} 
     ALIST=${ALIST#*,} 
     echo $A
-    $SCRIPTS/mscript-helper cat-mail $A $TEMPF
+    if contains $LOCAL_SENT $A ; then
+        continue
+    fi
+    $SCRIPTS/mmda $A cat-forward > /devnull 
+    if [ $? -ne 0 ] ; then
+        cat $TEMPF | $SCRIPTS/mmda $A mbox
+        LOCAL_SENT="$LOCAL_SENT,$A"
+        continue
+    fi
+    INDEX=1
+    $SCRIPTS/mmda $A cat-forward | {
+        INET_FWDS=""
+        while read LINE ; do
+            if echo $LINE | grep -q '^#' ; then
+                continue
+            elif echo $LINE | grep -q '^\s*/' ; then
+                $SCRIPTS/mmda $A run-forward $INDEX
+            elif echo $LINE | grep -q '^\s*["\']{,1}|' ; then
+                $SCRIPTS/mmda $A run-forward $INDEX
+            elif echo $LINE | grep -q "^\s*\\$A" ; then
+                cat $TEMPF | $SCRIPTS/mmda $A mbox
+                LOCAL_SENT="$LOCAL_SENT,$A"
+            elif echo $LINE | grep -q '^\s*\S\S*@\S\S*' ; then
+                IADDRESS=$(echo $LINE | sed 's/^\s*\(\S\S*@\S\S*\).*/\1/')
+                INET_FWDS="$INET_FWDS,$IADDRESS"
+            else # if no match, assume local user account
+                MAYBE_USER=$(echo $LINE | sed 's/^\s*\(\S\S*\).*/\1/')
+                if check_username $MAYBE_USER ; then
+                    ALIST="$ALIST,$MAYBE_USER"
+                fi
+            fi
+            INDEX=$(expr $INDEX + 1)
+        done
+        # if sender can send inet-mail, put INET_FWDS to his mailq,
+        # otherwise try to use receiving users mailq
+    }
 done
+
+echo "sent to: $LOCAL_SENT"
+echo "inet to: $LOCAL_SENT"
 rm -f $TEMPF

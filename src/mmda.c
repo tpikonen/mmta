@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pwd.h>
@@ -64,32 +65,59 @@ void touchmbox(const char *uname, int uid)
 }
 
 
-void catmail(const char *uname)
+void execprog(char * const argv[], const char *uname, const char *homedir)
 {
-    char mbox[SLEN];
-    int ulen;
+    char *newenv[3];
+    char *path = "PATH=/bin:/usr/bin";
+    char home[SLEN];
+    int i;
 
-    ulen = strlen(uname);
-    strcpy(mbox, MAILDIR);
-    strncat(mbox, uname, SLEN-1);
-    mbox[SLEN-1] = '\0';
-    if(access(mbox, F_OK)) {
-        
+    snprintf(home, SLEN, "HOME=%s", homedir);
+    newenv[0] = path;
+    newenv[1] = home;
+    newenv[2] = NULL;
+
+    i = 0;
+    while(argv[i] != NULL) {
+        printf("argv%d: %s\n", i, argv[i++]);
     }
+
+    execve(argv[0], argv, newenv);
+    printf("error: returning from exec\n");
+    exit(1);
 }
 
 
-void catforward(const char *homedir)
+void mboxmail(const char *uname, const char *homedir)
 {
-    char fwdfile[SLEN];
+    char *argv[2];
+
+    argv[0] = "./cat-mail";
+    argv[1] = NULL;
+    execprog(argv, uname, homedir);
+}
+
+
+void catforward(int uid, const char *homedir)
+{
+    char fwdname[SLEN];
     int fd, nread, nwritten;
     char *buf[BUFSIZE];
+    struct stat ss;
+    int statret;
 
-    strncpy(fwdfile, homedir, SLEN-10);
-    strncat(fwdfile, "/.forward", 10); 
-    fd = open(fwdfile, O_RDONLY);
+    strncpy(fwdname, homedir, SLEN-10);
+    strncat(fwdname, "/.forward", 10);
+    statret = stat(fwdname, &ss);
+    if((statret != 0) || ((ss.st_uid != uid) && (ss.st_uid != 0))) {
+        /* .forward does not exist or not owned by user or root */
+        exit(0);
+    }
+
+    fd = open(fwdname, O_RDONLY);
     if(fd < 3) {
-        exit(1);
+        /* Fail silently if file cannot be read */
+        exit(0);
     }
     while((nread = read(fd, buf, BUFSIZE)) > 0) {
         nwritten = 0;
@@ -104,14 +132,77 @@ void catforward(const char *homedir)
     if(nread < 0) { /* read error */
         exit(1);
     }
+    exit(0);
 }
 
 
-void runforward(const char *homedir)
+void runforward(int uid, const char *uname, const char *homedir, unsigned int lineno)
 {
+    FILE *fwd;
+    char fwdname[SLEN];
+    char buf[BUFSIZE];
+    unsigned int i;
+    struct stat ss;
+    int statret;
 
+    strncpy(fwdname, homedir, SLEN-10);
+    strncat(fwdname, "/.forward", 10);
+    statret = stat(fwdname, &ss);
+    if((statret != 0) || ((ss.st_uid != uid) && (ss.st_uid != 0))) {
+        /* .forward does not exist or not owned by user or root */
+        exit(0);
+    }
+
+    fwd = fopen(fwdname, "r");
+    if(fwd == NULL) {
+        exit(1);
+    }
+    i = 0;
+    while((i < lineno) && !feof(fwd)) {
+        fgets(buf, BUFSIZE, fwd);
+        i++;
+    }
+    if(feof(fwd) && (i <= lineno)) {
+        exit(2);
+    }
+    fclose(fwd);
+    printf("buf: |%s|\n", buf);
+    /* Ignore comment lines */
+    if(buf[0] == '#') {
+        exit(3);
+    }
+    /* Simple unquoting */
+    if(buf[0] == '"' || buf[0] == '\'') {
+        char *end;
+
+        end = strrchr(buf, buf[0]);
+        if(end <= buf) {
+            exit(0);
+        }
+        strncpy(buf, buf+1, end-buf-1);
+        buf[end-buf-1] = '\0';
+    }
+    printf("unquoted: |%s|\n", buf);
+    if(buf[0] == '|') {
+        char *argv[SLEN];
+        char *tok;
+        int i;
+
+        i = 0;
+        tok = strtok(buf+1, " \n");
+        argv[0] = tok;
+        while(tok != NULL) {
+            i++;
+            tok = strtok(NULL, " \n");
+            argv[i] = tok;
+        }
+        execprog(argv, uname, homedir);
+    } else if(buf[0] == '/') {
+
+    }
+    printf("Unknown .forward file command\n");
+    exit(1);
 }
-
 
 void cansend(const char *homedir)
 {
@@ -145,19 +236,16 @@ int main(int argc, char *argv[])
     if(argc < 3) {
         exit(1);
     }
-    printf("aimo1\n");
-    uname = argv[2];
+    uname = argv[1];
 #if DENY_ROOT
     if(!strncmp(uname, "root", 5)) {
         exit(2);
     }
 #endif
-    printf("aimo2\n");
     userinfo = getpwnam(uname);
     if(!userinfo) {
         exit(3);
     }
-    printf("aimo3\n");
     uid = userinfo->pw_uid;
 #if DENY_ROOT
     if(uid < 1000) {
@@ -166,7 +254,6 @@ int main(int argc, char *argv[])
 #endif
         exit(2);
     }
-    printf("aimo4\n");
     gid = userinfo->pw_gid;
     strncpy(shell, userinfo->pw_shell, SLEN-1);
     shell[SLEN-1] = '\0';
@@ -176,25 +263,35 @@ int main(int argc, char *argv[])
     userinfo = getpwnam("");
     /* Check if user is ok to receive mail */
     checkshell(shell);
-    printf("aimo5\n");
-    /* Make sure user has a mailbox */
-    touchmbox(uname, uid);
-    printf("aimo6\n");
-    /* Give up privs */
+
+    /* run a command */
+    /* if an mbox for user does not exist, it needs to
+     * be created with root privs
+     */
+    cmd = argv[2];
+    if(!strncmp(cmd, "mbox", 9)) {
+        touchmbox(uname, uid);
+        if(setuid(uid) != 0) {
+            exit(4);
+        }
+        mboxmail(uname, homedir);
+        exit(0);
+    }
+    /* rest of the commands do not need privileges */
     if(setuid(uid) != 0) {
         exit(4);
     }
-    printf("aimo7\n");
-    cmd = argv[1];
-    if(!strncmp(cmd, "cat-mail", 9)) {
-        catmail(uname);
-    } else if(!strncmp(cmd, "cat-forward", 12)) {
-        catforward(homedir);
+    if(!strncmp(cmd, "cat-forward", 12)) {
+        catforward(uid, homedir);
     } else if(!strncmp(cmd, "run-forward", 12)) {
+        unsigned int lineno;
+
         if(argc < 4) {
             exit(1);
         }
-        runforward(homedir);
+        lineno = 0;
+        sscanf(argv[3], "%5u", &lineno);
+        runforward(uid, uname, homedir, lineno);
     } else if(!strncmp(cmd, "can-send", 9)) {
         cansend(homedir);
     } else if(!strncmp(cmd, "queue-mail", 11)) {
@@ -202,4 +299,7 @@ int main(int argc, char *argv[])
     } else if(!strncmp(cmd, "run-queue", 10)) {
         runqueue(uname);
     }
+
+    printf("unknown command\n");
+    return 1;
 }

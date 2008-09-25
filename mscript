@@ -1,6 +1,9 @@
 #!/bin/sh
 
-SCRIPTS=./src
+SCRIPTS="/home/tpikonen/mailscript/tuuba"
+PWFILE="/etc/passwd"
+ALIASFILE="./aliases"
+
 ALIST=""
 
 # filterlist $PRED $LIST
@@ -28,8 +31,7 @@ filterlist ()
 # and the users shell is in /etc/shells
 check_username()
 {
-    local PWFILE USERSHELL
-    PWFILE="./passwd"
+    local USERSHELL
     USERSHELL=`grep "^${1}:" ${PWFILE} | cut -d: -f7`
     [ -n "$USERSHELL" ] || return 1
     grep -v '^#' /etc/shells | grep -q $USERSHELL
@@ -57,10 +59,9 @@ contains()
 
 get_aliases()
 {
-    local UNAME AFILE
+    local UNAME
     UNAME=$1
-    AFILE=./aliases
-    grep -v '^#' $AFILE | sed -n "
+    grep -v '^#' $ALIASFILE | sed -n "
 /^$UNAME:/ {
     s/\\\\$// ; h ; t sawslash
     :loop
@@ -148,8 +149,9 @@ echo "Allparams: $@"
 #echo $?
 #exit 1
 
-#resolve_aliases root
-#exit 0
+get_aliases keijo
+resolve_aliases security
+exit 0
 
 # Mail errors to sender by default
 MAIL_ERRORS=1
@@ -226,7 +228,9 @@ while [ "$A" != "$ALIST" ] ; do
     esac
 done
 # Remove dups, check if local usernames are valid
-INET_RECV=$(echo ${INET_RECV#,} | tr ',' '\n' | sort | uniq | tr '\n' ',')
+INET_RECV=$(echo -n ${INET_RECV#,} | tr ',' '\n' | sort | uniq | tr '\n' ',')
+INET_RECV=${INET_RECV#,}
+INET_RECV=${INET_RECV%%,}
 LOC_RECV=$(echo ${LOC_RECV#,} | tr ',' '\n' | sort | uniq | tr '\n' ',')
 LOC_RECV=$(filterlist check_username ${LOC_RECV})
 
@@ -247,12 +251,13 @@ cat >> $TEMPF
 #sed 's/^\(>*From \)/>\1/' >> $TEMPF
 echo >> $TEMPF
 
+echo $TEMPF
 cat $TEMPF
 
 # Should do delivery of supplied inet addresses first
 echo "/// Starting delivery ///"
 # Local delivery
-echo "|${LOC_RECV}|" 
+echo "LOC_RECV: |${LOC_RECV}|" 
 LOCAL_SENT=""
 ALIST=$LOC_RECV
 A=""
@@ -263,41 +268,52 @@ while [ "$A" != "$ALIST" ]; do
     if contains $LOCAL_SENT $A ; then
         continue
     fi
-    $SCRIPTS/mmda $A cat-forward > /devnull 
+    $SCRIPTS/mmda $A cat-forward > /dev/null 
     if [ $? -ne 0 ] ; then
         cat $TEMPF | $SCRIPTS/mmda $A mbox
         LOCAL_SENT="$LOCAL_SENT,$A"
         continue
     fi
     INDEX=1
-    $SCRIPTS/mmda $A cat-forward | {
-        INET_FWDS=""
-        while read LINE ; do
-            if echo $LINE | grep -q '^#' ; then
-                continue
-            elif echo $LINE | grep -q '^\s*/' ; then
-                $SCRIPTS/mmda $A run-forward $INDEX
-            elif echo $LINE | grep -q '^\s*["\']{,1}|' ; then
-                $SCRIPTS/mmda $A run-forward $INDEX
-            elif echo $LINE | grep -q "^\s*\\$A" ; then
-                cat $TEMPF | $SCRIPTS/mmda $A mbox
-                LOCAL_SENT="$LOCAL_SENT,$A"
-            elif echo $LINE | grep -q '^\s*\S\S*@\S\S*' ; then
-                IADDRESS=$(echo $LINE | sed 's/^\s*\(\S\S*@\S\S*\).*/\1/')
-                INET_FWDS="$INET_FWDS,$IADDRESS"
-            else # if no match, assume local user account
-                MAYBE_USER=$(echo $LINE | sed 's/^\s*\(\S\S*\).*/\1/')
-                if check_username $MAYBE_USER ; then
-                    ALIST="$ALIST,$MAYBE_USER"
-                fi
+    INET_FWDS=""
+    TMPFWD=$(tempfile)
+#    $SCRIPTS/mmda $A cat-forward > $TMPFWD 
+    cat /home/tpikonen/mailscript/forward > $TMPFWD
+    while read LINE ; do
+        echo $LINE
+        if echo $LINE | grep -q '^#' ; then
+            echo "->kommentti"
+            continue
+        elif echo $LINE | grep -q '^[[:space:]]*/' ; then
+            echo "->tiedosto"
+            cat $TEMPF | $SCRIPTS/mmda $A run-forward $INDEX
+        elif echo $LINE | grep -q "^[[:space:]]*[\"']*|" ; then
+            echo "->pipe"
+            cat $TEMPF | $SCRIPTS/mmda $A run-forward $INDEX
+        elif echo $LINE | grep -q "^[[:space:]]*[\\\\]*$A *$" ; then
+            echo "->mbox"
+            cat $TEMPF | $SCRIPTS/mmda $A mbox
+            LOCAL_SENT="$LOCAL_SENT,$A"
+        elif echo $LINE | grep -q '@' ; then
+            echo "->inet"
+            IADDRESS=$(echo $LINE | sed 's/.*\s\s*\(\S\S*@\S\S*\).*/\1/')
+            INET_FWDS="$INET_FWDS,$IADDRESS"
+        else # if no match, assume local user account
+            echo "->local"
+            MAYBE_USER=$(echo $LINE | sed 's/^\s*\(\S\S*\).*/\1/')
+            if check_username $MAYBE_USER ; then
+                ALIST="$ALIST,$MAYBE_USER"
+            else
+                echo "Warning: unknown local user $MAYBE_USER in .forward of $A" >&2
             fi
-            INDEX=$(expr $INDEX + 1)
-        done
-        # if sender can send inet-mail, put INET_FWDS to his mailq,
-        # otherwise try to use receiving users mailq
-    }
+        fi
+        INDEX=$(expr $INDEX + 1)
+    done < $TMPFWD
+    rm -f $TMPFWD
+    # if sender can send inet-mail, put INET_FWDS to his mailq,
+    # otherwise try to use receiving users mailq
 done
-
+ 
 echo "sent to: $LOCAL_SENT"
-echo "inet to: $LOCAL_SENT"
+echo "inet to: $INET_FWDS"
 rm -f $TEMPF

@@ -65,6 +65,7 @@ get_aliases()
 /^$UNAME:/ {
     s/\\\\$// ; h ; t sawslash
     :loop
+    $ b exit
     n
     s/^\S// ; t exit
     s/\\\\$// ; H ; $ b exit

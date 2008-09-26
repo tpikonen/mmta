@@ -6,36 +6,25 @@ ALIASFILE="./aliases"
 
 ALIST=""
 
-# filterlist $PRED $LIST
-# Filter out elements from a comma separated $LIST for which not $PRED elem
-filterlist ()
+# Routines for handling comma-separated lists
+
+# append $LIST $A
+# append $A to $LIST
+append ()
 {
-    local PRED LIST A ALIST OUTLIST
-    PRED=$1
-    LIST=$2
-    A=""
-    ALIST=$LIST
-    OUTLIST=""
-    while [ "$A" != "$ALIST" ] ; do
-        A=${ALIST%%,*}
-        ALIST=${ALIST#*,}
-        if $PRED $A ; then
-            OUTLIST="$OUTLIST,$A"
-        fi
-    done
-    OUTLIST=${OUTLIST#,}
-    echo $OUTLIST
+    if [ -z $1 ] ; then
+        echo $2
+    else
+        echo "$1,$2"
+    fi
 }
 
-# Check if a given username is in /etc/passwd 
-# and the users shell is in /etc/shells
-check_username()
+
+# cdr $LIST
+# Get the tail part of $LIST, or empty string if list has one element
+cdr ()
 {
-    local USERSHELL
-    USERSHELL=`grep "^${1}:" ${PWFILE} | cut -d: -f7`
-    [ -n "$USERSHELL" ] || return 1
-    grep -v '^#' /etc/shells | grep -q $USERSHELL
-    return $?
+    echo $1 | sed 's/^[^,]*,*\(.*\)/\1/'
 }
 
 
@@ -57,6 +46,43 @@ contains()
     return 1
 }
 
+
+# filterlist $PRED $LIST
+# Filter out elements from a comma separated $LIST for which not $PRED elem
+filterlist ()
+{
+    local PRED LIST A ALIST OUTLIST
+    PRED=$1
+    LIST=$2
+    A=""
+    ALIST=$LIST
+    OUTLIST=""
+    while [ "$A" != "$ALIST" ] ; do
+        A=${ALIST%%,*}
+        ALIST=${ALIST#*,}
+        if $PRED $A ; then
+            OUTLIST=$(append "$OUTLIST" "$A")
+        fi
+    done
+    echo $OUTLIST
+}
+
+
+# Other functions
+
+# Check if a given username is in /etc/passwd 
+# and the users shell is in /etc/shells
+check_username()
+{
+    local USERSHELL
+    USERSHELL=`grep "^${1}:" ${PWFILE} | cut -d: -f7`
+    [ -n "$USERSHELL" ] || return 1
+    grep -v '^#' /etc/shells | grep -q $USERSHELL
+    return $?
+}
+
+# get_aliases $UNAME
+# echo the logical line after $UNAME in $ALIASFILE
 get_aliases()
 {
     local UNAME
@@ -87,7 +113,8 @@ get_aliases()
     return 1
 }
 
-
+# resolve_aliases $USER
+# Recursively alias-expand $USER. Output in global vars AL_LOCLIST, etc.
 resolve_aliases()
 {
     local USER PROCESSED A ALIST
@@ -101,37 +128,37 @@ resolve_aliases()
 
     ALIST=$(get_aliases $USER)
     A=""
-    while [ "$A" != "$ALIST" ] ; do
+    while [ -n "$ALIST" ] ; do
         A=${ALIST%%,*}
-        ALIST=${ALIST#*,}
-        if contains $PROCESSED $A ; then
+        ALIST=$(cdr $ALIST)
+        if contains "$PROCESSED" "$A" ; then
             echo "Warning: aliases file contains a loop with user $A" 1>&2
             continue
         fi
         case "$A" in
             /*) # Filename
-                AL_FILELIST="$AL_FILELIST,$A" ;;
+                AL_FILELIST=$(append "$AL_FILELIST" "$A") ;;
             \|*) # Pipe
-                AL_PIPELIST="$AL_PIPELIST,$A" ;;
+                AL_PIPELIST=$(append "$AL_PIPELIST" "$A" ;;
             :*) # Include file
-                AL_INCLIST="$AL_INCLIST,$A" ;;
+                AL_INCLIST=$(append "$AL_INCLIST" "$A") ;;
             *@*) # Inet mailaddress
-                AL_INETLIST="$AL_INETLIST,$A" ;;
+                AL_INETLIST=$(append "$AL_INETLIST" "$A") ;;
             *) # Local address?
                 LIST=$(get_aliases $A)
                 if [ -n "$LIST" ] ; then
-                    ALIST="$LIST,$ALIST"
-                    PROCESSED="$PROCESSED,$A"
+                    ALIST=$(append "$ALIST" "$LIST")
+                    PROCESSED=$(append "$PROCESSED" "$A")
                 else
-                    AL_LOCLIST="$AL_LOCLIST,$A"
+                    AL_LOCLIST=$(append "$AL_LOCLIST" "$A")
                 fi ;;
         esac
     done
-    AL_LOCLIST=${AL_LOCLIST#,}
-    AL_INETLIST=${AL_INETLIST#,}
-    AL_PIPELIST=${AL_PIPELIST#,}
-    AL_FILELIST=${AL_FILELIST#,}
-    AL_INCLIST=${AL_INCLIST#,}
+#    AL_LOCLIST=${AL_LOCLIST#,}
+#    AL_INETLIST=${AL_INETLIST#,}
+#    AL_PIPELIST=${AL_PIPELIST#,}
+#    AL_FILELIST=${AL_FILELIST#,}
+#    AL_INCLIST=${AL_INCLIST#,}
 #        echo "AL_LOCLIST: $AL_LOCLIST"
 #        echo "AL_INETLIST: $AL_INETLIST"
 #        echo "AL_PIPELIST: $AL_PIPELIST"

@@ -249,10 +249,10 @@ while [ "$A" != "$ALIST" ] ; do
     R=${R%%@$HOSTNAME}
     case $R in 
         *@*)
-            INET_RECV="$INET_RECV,$R" ;;
+            INET_RECV=$(append "$INET_RECV" "$R") ;;
         *)
             resolve_aliases $R
-            LOC_RECV="$LOC_RECV,$AL_LOCLIST" ;;
+            LOC_RECV=$(append "$LOC_RECV" "$AL_LOCLIST") ;;
     esac
 done
 # Remove dups, check if local usernames are valid
@@ -283,23 +283,25 @@ echo $TEMPF
 cat $TEMPF
 
 # Should do delivery of supplied inet addresses first
+# queue_mail $INET_RECV
+
 echo "/// Starting delivery ///"
 # Local delivery
 echo "LOC_RECV: |${LOC_RECV}|" 
 LOCAL_SENT=""
 ALIST=$LOC_RECV
 A=""
-while [ "$A" != "$ALIST" ]; do 
+while [ -n "$ALIST" ]; do 
     A=${ALIST%%,*} 
-    ALIST=${ALIST#*,} 
+    ALIST=$(cdr $ALIST) 
     echo $A
-    if contains $LOCAL_SENT $A ; then
+    if contains "$LOCAL_SENT" "$A" ; then
         continue
     fi
     $SCRIPTS/mmda $A cat-forward > /dev/null 
     if [ $? -ne 0 ] ; then
         cat $TEMPF | $SCRIPTS/mmda $A mbox
-        LOCAL_SENT="$LOCAL_SENT,$A"
+        LOCAL_SENT=$(append "$LOCAL_SENT" "$A")
         continue
     fi
     INDEX=1
@@ -321,16 +323,16 @@ while [ "$A" != "$ALIST" ]; do
         elif echo $LINE | grep -q "^[[:space:]]*[\\\\]*$A *$" ; then
             echo "->mbox"
             cat $TEMPF | $SCRIPTS/mmda $A mbox
-            LOCAL_SENT="$LOCAL_SENT,$A"
+            LOCAL_SENT=$(append "$LOCAL_SENT" "$A")
         elif echo $LINE | grep -q '@' ; then
             echo "->inet"
             IADDRESS=$(echo $LINE | sed 's/.*\s\s*\(\S\S*@\S\S*\).*/\1/')
-            INET_FWDS="$INET_FWDS,$IADDRESS"
+            INET_FWDS=$(append "$INET_FWDS" "$IADDRESS")
         else # if no match, assume local user account
             echo "->local"
             MAYBE_USER=$(echo $LINE | sed 's/^\s*\(\S\S*\).*/\1/')
             if check_username $MAYBE_USER ; then
-                ALIST="$ALIST,$MAYBE_USER"
+                ALIST=$(append "$ALIST" "$MAYBE_USER")
             else
                 echo "Warning: unknown local user $MAYBE_USER in .forward of $A" >&2
             fi

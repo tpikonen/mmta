@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pwd.h>
+#include <lockfile.h>
 
 #define SLEN 1024
 #define BUFSIZE 4096
@@ -32,36 +33,6 @@ void checkshell(const char *shell)
         }
     }
     exit(1);
-}
-
-
-/* Make sure a correct mbox file for user exists */
-/* This function is run as suid root */
-void touchmbox(const char *uname, int uid)
-{
-    char mbox[SLEN];
-    struct stat ss;    
-
-    strcpy(mbox, MAILDIR);
-    strncat(mbox, "/", SLEN-1);
-    strncat(mbox, uname, SLEN-1);
-    mbox[SLEN-1] = '\0';
-    if(stat(mbox, &ss) < 0) {
-        int fd;
-        /* touch file */
-        if((fd = creat(mbox, 0660)) < 0) {
-            exit(1);
-        }
-        fchown(fd, uid, MAIL_GID);
-        close(fd);
-        stat(mbox, &ss);
-    }
-    /* Check that the file is owned by the user and has correct perms */
-    if(ss.st_uid != uid || ss.st_gid != MAIL_GID || !S_ISREG(ss.st_mode)
-            || (ss.st_mode & 0777) != 0660 )
-    {
-        exit(1);
-    } 
 }
 
 
@@ -88,13 +59,68 @@ void execprog(char * const argv[], const char *uname, const char *homedir)
 }
 
 
-void mboxmail(const char *uname, const char *homedir)
+/* Make sure a correct mbox file for user exists */
+/* This function is run as suid root */
+void touchmbox(const char *uname, int uid)
 {
-    char *argv[2];
+    char mboxname[SLEN];
+    struct stat ss;
 
-    argv[0] = "./cat-mail";
-    argv[1] = NULL;
-    execprog(argv, uname, homedir);
+    snprintf(mboxname, SLEN-1, "%s/%s", MAILDIR, uname);
+    if(stat(mboxname, &ss) < 0) {
+        int fd;
+        /* touch file */
+        if((fd = creat(mboxname, 0660)) < 0) {
+            exit(1);
+        }
+        fchown(fd, uid, MAIL_GID);
+        close(fd);
+        stat(mboxname, &ss);
+    }
+    /* Check that the file is owned by the user and has correct perms */
+    if(ss.st_uid != uid || ss.st_gid != MAIL_GID || !S_ISREG(ss.st_mode)
+            || (ss.st_mode & 0777) != 0660 )
+    {
+        exit(1);
+    }
+}
+
+
+void mboxmail(const char *uname, const char *cname)
+{
+    FILE *f;
+    char mboxname[SLEN];
+    char lockname[SLEN];
+    char *argv[2];
+    int c;
+    time_t t;
+
+    snprintf(mboxname, SLEN-1, "%s/%s", MAILDIR, uname);
+    snprintf(lockname, SLEN-1, "%s.lock", mboxname);
+    if(lockfile_create(lockname, 4, 0) != 0) {
+        exit(13);
+    }
+    f = fopen(mboxname, "a");
+    if(f == NULL) {
+        /* Could not create mbox? */
+        exit(3);
+    }
+    time(&t);
+    fprintf(f, "From %s %s\n", cname, ctime(&t)); //FIXME: doesn't print timezone
+    c = getc(stdin);
+    while(!feof(stdin)) {
+        putc(c, f);
+        c = getc(stdin);
+    }
+    if(lockfile_remove(lockname) != 0) {
+        exit(1);
+    }
+    if(ferror(f)) {
+        /* some error */
+        exit(1);
+    }
+    fclose(f);
+    exit(0);
 }
 
 /* Output users' ~/.forward file to stdout
@@ -229,10 +255,12 @@ void runqueue(const char *uname)
 int main(int argc, char *argv[])
 {
     struct passwd *userinfo;
-    uid_t uid;
+    struct passwd *callerinfo;
+    uid_t uid, cuid;
     gid_t gid;
     char *uname;
     char *cmd;
+    char cname[SLEN];
     char shell[SLEN];
     char homedir[SLEN];
 
@@ -263,22 +291,27 @@ int main(int argc, char *argv[])
     shell[SLEN-1] = '\0';
     strncpy(homedir, userinfo->pw_dir, SLEN-1);
     homedir[SLEN-1] = '\0';
-    /* destroy remaining user information */
-    userinfo = getpwnam("");
     /* Check if user is ok to receive mail */
     checkshell(shell);
+
+    cuid = getuid();
+    callerinfo = getpwuid(cuid);
+    if(!callerinfo) {
+        exit(3);
+    }
+    strncpy(cname, callerinfo->pw_name, SLEN-1);
 
     /* run a command */
     /* if an mbox for user does not exist, it needs to
      * be created with root privs
      */
     cmd = argv[2];
-    if(!strncmp(cmd, "mbox", 9)) {
+    if(!strncmp(cmd, "mbox", 5)) {
         touchmbox(uname, uid);
         if(setuid(uid) != 0) {
             exit(4);
         }
-        mboxmail(uname, homedir);
+        mboxmail(uname, cname);
         exit(0);
     }
     /* rest of the commands do not need privileges */

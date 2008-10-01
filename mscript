@@ -1,4 +1,7 @@
 #!/bin/sh
+# mmta, a minimal mail transport agent
+# Copyright: 2008 Teemu Ikonen <tpikonen@gmail.com>
+# License: GPLv3+
 
 SCRIPTS="/home/tpikonen/mailscript/git-mailscript/src"
 PWFILE="/etc/passwd"

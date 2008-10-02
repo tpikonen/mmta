@@ -1,0 +1,24 @@
+Source: mmta
+Section: mail
+Priority: optional
+Maintainer: Teemu Ikonen <tpikonen@gmail.com> 
+Build-Depends: debhelper (>=7), liblockfile-dev
+Standards-Version: 3.8.0
+
+Package: mmta
+Architecture: any
+Section: mail
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: msmtp
+Replaces: mail-transport-agent
+Provides: mail-transport-agent
+Description: Minimalistic mail transport agent for desktop systems
+ mmta is an ultra-simple mail transport agent (MTA) focusing on small
+ code size and ease of configuration. It does only local delivery by
+ itself, but can be configured to forward mail to an SMTP-server
+ using external programs such as msmtp.
+ .
+ The functionality of mmta is limited by design to receiving a message
+ and immediately storing it either to a mailbox of a local receiver, 
+ or to a user specific spool directory. Attempts at forwarding mail
+ destined to external hosts are made periodically with a cron job.

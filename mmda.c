@@ -213,11 +213,16 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname, const char 
     FILE *fwd;
     char buf[SLEN];
     int blen;
+    int can_send;
 
     fwd = fopen(fwdname, "r");
     if(fwd == NULL) {
         exit(1);
     }
+
+// FIXME: check is user can send external mail
+    can_send = 0;
+
     while(!feof(fwd)) {
         fseek(mfile, 0, SEEK_SET);
         if(fgets(buf, SLEN, fwd) == NULL) {
@@ -246,6 +251,9 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname, const char 
         }
         eat_wspace(buf);
         printf("unquoted: ***%s***\n", buf);
+        if(buf[0] == '\\') {
+            strncpy(buf, buf+1, SLEN);
+        }
         if(buf[0] == '|') {
             char *argv[SLEN];
             char *tok;
@@ -271,22 +279,19 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname, const char 
             wait(&status);
         } else if(buf[0] == '/') {
             mboxmail(mfile, buf, cname);
-        } else {
-            char *c;
-
-            if(buf[0] == '\\') {
-                c = buf+1;
+        } else if(strchr(buf, '@')) {
+            if(can_send) {
+                ;
             } else {
-                c = buf;
+                printf("mail: %s\n", buf); //FIXME: debug
             }
-            if(strncmp(uname, c, SLEN) == 0) {
+        } else if(strncmp(uname, buf, SLEN) == 0) {
                 char mboxname[SLEN];
 
                 snprintf(mboxname, SLEN, "%s/%s", MAILDIR, uname);
                 mboxmail(mfile, mboxname, cname); // FIXME: check retval
-            } else {
-                printf("%s\n", c);
-            }
+        } else {
+            printf("%s\n", buf);
         }
     }
     fclose(fwd);

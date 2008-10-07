@@ -10,9 +10,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <pwd.h>
 #include <lockfile.h>
+#include <time.h>
 
 #define SLEN 1024
 #define DENY_ROOT 1
@@ -52,7 +54,8 @@ void execprog(char * const argv[], const char *homedir)
 
     i = 0;
     while(argv[i] != NULL) {
-        printf("argv%d: %s\n", i, argv[i++]);
+        printf("argv%d: %s\n", i, argv[i]);
+        i++;
     }
     execve(argv[0], argv, newenv);
     printf("error: returning from exec\n");
@@ -92,7 +95,6 @@ int mboxmail(FILE* infile, const char *mboxname, const char *cname)
     FILE *f;
     char lockname[SLEN];
     int locksz;
-    char *argv[2];
     int c;
     time_t t;
 
@@ -196,6 +198,7 @@ void catforward(int uid, const char *homedir)
     exit(0);
 }
 
+
 void eat_wspace(char *buf)
 {
     int i;
@@ -207,6 +210,7 @@ void eat_wspace(char *buf)
         strncpy(buf, buf+i, SLEN);
     }
 }
+
 
 void runforward(const char *fwdname, FILE *mfile, const char *uname, const char *homedir, char *cname)
 {
@@ -317,14 +321,12 @@ int main(int argc, char *argv[])
     uid_t uid, cuid;
     gid_t gid;
     char *uname;
-    char *cmd;
     char cname[SLEN];
     char shell[SLEN];
     char homedir[SLEN];
     char fwdname[SLEN];
     int c;
     FILE *mfile;
-    FILE *tuuba1;
     int statret;
     struct stat ss;
 
@@ -396,25 +398,5 @@ int main(int argc, char *argv[])
 
     runforward(fwdname, mfile, uname, homedir, cname);
 
-/*
-    if(!strncmp(cmd, "maildir", 12)) {
-        maildirmail(uname, uid, homedir);
-    } else if(!strncmp(cmd, "cat-forward", 12)) {
-        catforward(uid, homedir);
-    } else if(!strncmp(cmd, "run-forward", 12)) {
-        runforward(uid, uname, homedir, cname);
-    } else if(!strncmp(cmd, "can-send", 9)) {
-        runscript("can-send", uname, homedir);
-    } else if(!strncmp(cmd, "queue-mail", 11)) {
-        if(!strncmp(cname, uname, SLEN-1)) {
-            queuemail("queue-mail", uname, homedir);
-        } else {
-            exit(1);
-        }
-    } else if(!strncmp(cmd, "send-queue", 12)) {
-        runscript("send-queue", uname, homedir);
-    }
-*/
-    printf("unknown command\n");
     return 33;
 }

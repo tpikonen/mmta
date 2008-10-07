@@ -21,3 +21,8 @@ suid helper must do:
 * Make cron script which runs every half-hour and for each user, runs 
   + 'mmda can-send' to check if user can send mail
   + If yes, runs 'mmda run-queue'
+
+* New design with commands:
+    mmda user : runs .forward and outputs local usernames which were found in 
+        the .forward file. If user cannot send external mail (script 'can-send')        output also the external addresses
+    mmda -s user : sends out the mails in users queue

@@ -54,7 +54,6 @@ void execprog(char * const argv[], const char *homedir)
     while(argv[i] != NULL) {
         printf("argv%d: %s\n", i, argv[i++]);
     }
-
     execve(argv[0], argv, newenv);
     printf("error: returning from exec\n");
     exit(1);
@@ -151,7 +150,7 @@ void maildirmail(const char *uname, int uid, const char *homedir)
     argv[1] = mdirtmp;
     argv[2] = mdirnew;
     argv[3] = NULL;
-    execprog(argv, uname, homedir);
+    execprog(argv, homedir);
 }
 
 
@@ -317,7 +316,12 @@ int main(int argc, char *argv[])
     char cname[SLEN];
     char shell[SLEN];
     char homedir[SLEN];
-
+    char fwdname[SLEN];
+    int c;
+    FILE *mfile;
+    FILE *tuuba1;
+    int statret;
+    struct stat ss;
 
     if(argc < 3) {
         exit(1);
@@ -354,45 +358,58 @@ int main(int argc, char *argv[])
         exit(3);
     }
     strncpy(cname, callerinfo->pw_name, SLEN-1);
-
-    /* run a command */
-    /* if an mbox for user does not exist, it needs to
-     * be created with root privs
-     */
-    cmd = argv[2];
-    if(!strncmp(cmd, "mbox", 5)) {
-        touchmbox(uname, uid);
-        if(setuid(uid) != 0) {
-            exit(4);
-        }
-        mboxmail(uname, cname);
-        exit(0);
-    }
-    /* rest of the commands do not need privileges */
+    touchmbox(uname, uid);
+    /* Drop privs */
     if(setuid(uid) != 0) {
         exit(4);
     }
+    
+    snprintf(fwdname, SLEN-1, "%s/mailscript/git-mailscript/forward", homedir);
+    printf("fwd: %s\n", fwdname);
+    statret = stat(fwdname, &ss);
+    if((statret != 0) || ((ss.st_uid != uid) && (ss.st_uid != 0))) {
+        /* .forward does not exist or not owned by user or root */
+        char mboxname[SLEN];
+
+        snprintf(mboxname, SLEN, "%s/%s", MAILDIR, uname);
+        return mboxmail(stdin, mboxname, cname);    
+    }
+    
+    mfile = tmpfile();
+    if(mfile == NULL) {
+        return 1;
+    }
+    c = getc(stdin);
+    while(!feof(stdin)) {
+        putc(c, mfile);
+        c = getc(stdin);
+    }
+    if(ferror(mfile)) {
+        /* some error */
+        return 1;
+    }
+
+    runforward(fwdname, mfile, uname, homedir, cname);
+
+/*
     if(!strncmp(cmd, "maildir", 12)) {
         maildirmail(uname, uid, homedir);
     } else if(!strncmp(cmd, "cat-forward", 12)) {
         catforward(uid, homedir);
     } else if(!strncmp(cmd, "run-forward", 12)) {
-        unsigned int lineno;
-
-        if(argc < 4) {
+        runforward(uid, uname, homedir, cname);
+    } else if(!strncmp(cmd, "can-send", 9)) {
+        runscript("can-send", uname, homedir);
+    } else if(!strncmp(cmd, "queue-mail", 11)) {
+        if(!strncmp(cname, uname, SLEN-1)) {
+            queuemail("queue-mail", uname, homedir);
+        } else {
             exit(1);
         }
-        lineno = 0;
-        sscanf(argv[3], "%5u", &lineno);
-        runforward(uid, uname, homedir, lineno);
-    } else if(!strncmp(cmd, "can-send", 9)) {
-        cansend(homedir);
-    } else if(!strncmp(cmd, "queue-mail", 11)) {
-        queuemail(uname);
-    } else if(!strncmp(cmd, "run-queue", 10)) {
-        runqueue(uname);
+    } else if(!strncmp(cmd, "send-queue", 12)) {
+        runscript("send-queue", uname, homedir);
     }
-
+*/
     printf("unknown command\n");
-    return 1;
+    return 33;
 }

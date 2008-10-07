@@ -88,41 +88,41 @@ void touchmbox(const char *uname, int uid)
 }
 
 
-void mboxmail(const char *uname, const char *cname)
+int mboxmail(FILE* infile, const char *mboxname, const char *cname)
 {
     FILE *f;
-    char mboxname[SLEN];
     char lockname[SLEN];
+    int locksz;
     char *argv[2];
     int c;
     time_t t;
 
-    snprintf(mboxname, SLEN-1, "%s/%s", MAILDIR, uname);
-    snprintf(lockname, SLEN-1, "%s.lock", mboxname);
-    if(lockfile_create(lockname, 4, 0) != 0) {
-        exit(13);
+    locksz = snprintf(lockname, SLEN-1, "%s.lock", mboxname);
+    if((locksz != strlen(mboxname)+5) || lockfile_create(lockname, 4, 0) != 0) {
+        return 13;
     }
     f = fopen(mboxname, "a");
     if(f == NULL) {
         /* Could not create mbox? */
-        exit(3);
+        lockfile_remove(lockname); 
+        return 3;
     }
     time(&t);
     fprintf(f, "From %s %s\n", cname, ctime(&t)); //FIXME: doesn't print timezone
-    c = getc(stdin);
-    while(!feof(stdin)) {
+    c = getc(infile);
+    while(!feof(infile)) {
         putc(c, f);
-        c = getc(stdin);
+        c = getc(infile);
     }
     if(lockfile_remove(lockname) != 0) {
-        exit(1);
+        return 1;
     }
     if(ferror(f)) {
         /* some error */
-        exit(1);
+        return 1;
     }
     fclose(f);
-    exit(0);
+    return 0;
 }
 
 

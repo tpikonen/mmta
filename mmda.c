@@ -197,90 +197,112 @@ void catforward(int uid, const char *homedir)
     exit(0);
 }
 
+void eat_wspace(char *buf)
+{
+    int i;
 
-void runforward(int uid, const char *uname, const char *homedir, unsigned int lineno)
+    i = 0;
+    while(buf[i] == ' ' || buf[i] == '\t')
+        i++;
+    if(i > 0) {
+        strncpy(buf, buf+i, SLEN);
+    }
+}
+
+void runforward(const char *fwdname, FILE *mfile, const char *uname, const char *homedir, char *cname)
 {
     FILE *fwd;
-    char fwdname[SLEN];
-    char buf[BUFSIZE];
-    unsigned int i;
-    struct stat ss;
-    int statret;
-
-    strncpy(fwdname, homedir, SLEN-10);
-    strncat(fwdname, "/.forward", 10);
-    statret = stat(fwdname, &ss);
-    if((statret != 0) || ((ss.st_uid != uid) && (ss.st_uid != 0))) {
-        /* .forward does not exist or not owned by user or root */
-        exit(0);
-    }
+    char buf[SLEN];
+    int blen;
 
     fwd = fopen(fwdname, "r");
     if(fwd == NULL) {
         exit(1);
     }
-    i = 0;
-    while((i < lineno) && !feof(fwd)) {
-        fgets(buf, BUFSIZE, fwd);
-        i++;
-    }
-    if(feof(fwd) && (i <= lineno)) {
-        exit(2);
+    while(!feof(fwd)) {
+        fseek(mfile, 0, SEEK_SET);
+        if(fgets(buf, SLEN, fwd) == NULL) {
+            break;
+        }
+//        printf("buf: |%s|\n", buf);
+        /* Ignore comment lines */
+        if(buf[0] == '#') {
+            continue;
+        }
+        blen = strlen(buf);
+        if(buf[blen-1] == '\n') {
+            buf[blen-1] = '\0';
+        }
+        eat_wspace(buf);
+        /* Simple unquoting */
+        if(buf[0] == '"' || buf[0] == '\'') {
+            char *end;
+
+            end = strrchr(buf, buf[0]);
+            if(end <= buf) {
+                exit(0);
+            }
+            strncpy(buf, buf+1, end-buf-1);
+            buf[end-buf-1] = '\0';
+        }
+        eat_wspace(buf);
+        printf("unquoted: ***%s***\n", buf);
+        if(buf[0] == '|') {
+            char *argv[SLEN];
+            char *tok;
+            int i, status;
+            pid_t cpid;
+
+            i = 0;
+            tok = strtok(buf+1, " \n");
+            argv[0] = tok;
+            while(tok != NULL) {
+                i++;
+                tok = strtok(NULL, " \n");
+                argv[i] = tok;
+            }
+            cpid = fork();
+            if(cpid < 0) {
+                exit(123);
+            }
+            if(cpid == 0) {
+                dup2(fileno(mfile), 0);         
+                execprog(argv, homedir);
+            }
+            wait(&status);
+        } else if(buf[0] == '/') {
+            mboxmail(mfile, buf, cname);
+        } else {
+            char *c;
+
+            if(buf[0] == '\\') {
+                c = buf+1;
+            } else {
+                c = buf;
+            }
+            if(strncmp(uname, c, SLEN) == 0) {
+                char mboxname[SLEN];
+
+                snprintf(mboxname, SLEN, "%s/%s", MAILDIR, uname);
+                mboxmail(mfile, mboxname, cname); // FIXME: check retval
+            } else {
+                printf("%s\n", c);
+            }
+        }
     }
     fclose(fwd);
-    printf("buf: |%s|\n", buf);
-    /* Ignore comment lines */
-    if(buf[0] == '#') {
-        exit(3);
-    }
-    /* Simple unquoting */
-    if(buf[0] == '"' || buf[0] == '\'') {
-        char *end;
-
-        end = strrchr(buf, buf[0]);
-        if(end <= buf) {
-            exit(0);
-        }
-        strncpy(buf, buf+1, end-buf-1);
-        buf[end-buf-1] = '\0';
-    }
-    printf("unquoted: |%s|\n", buf);
-    if(buf[0] == '|') {
-        char *argv[SLEN];
-        char *tok;
-        int i;
-
-        i = 0;
-        tok = strtok(buf+1, " \n");
-        argv[0] = tok;
-        while(tok != NULL) {
-            i++;
-            tok = strtok(NULL, " \n");
-            argv[i] = tok;
-        }
-        execprog(argv, uname, homedir);
-    } else if(buf[0] == '/') {
-
-    }
-    printf("Unknown .forward file command\n");
     exit(1);
 }
 
-void cansend(const char *homedir)
+void runscript(const char *scriptname, const char *uname, const char *homedir)
 {
+    char *argv[2];
+    char fullname[SLEN];
 
-}
-
-
-void queuemail(const char *uname)
-{
-
-}
-
-
-void runqueue(const char *uname)
-{
-
+    snprintf(fullname, SLEN-1, "%s/%s", SCRIPTDIR, scriptname);
+    argv[0] = fullname;
+    argv[1] = NULL;
+    execprog(argv, homedir);
 }
 
 

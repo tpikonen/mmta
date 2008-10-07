@@ -38,7 +38,7 @@ void checkshell(const char *shell)
 }
 
 
-void execprog(char * const argv[], const char *uname, const char *homedir)
+void execprog(char * const argv[], const char *homedir)
 {
     char *newenv[3];
     char *path = "PATH=/bin:/usr/bin";

@@ -15,7 +15,6 @@
 #include <lockfile.h>
 
 #define SLEN 1024
-#define BUFSIZE 4096
 #define DENY_ROOT 1
 #define MAILDIR "/var/mail"
 #define QEXT ".mailq"
@@ -166,7 +165,7 @@ void catforward(int uid, const char *homedir)
 {
     char fwdname[SLEN];
     int fd, nread, nwritten;
-    char *buf[BUFSIZE];
+    char *buf[SLEN];
     struct stat ss;
     int statret;
 
@@ -182,7 +181,7 @@ void catforward(int uid, const char *homedir)
     if(fd < 3) {
         exit(2);
     }
-    while((nread = read(fd, buf, BUFSIZE)) > 0) {
+    while((nread = read(fd, buf, SLEN)) > 0) {
         nwritten = 0;
         while(nwritten < nread) {
             int nout;

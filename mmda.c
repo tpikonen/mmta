@@ -18,8 +18,11 @@
 #define BUFSIZE 4096
 #define DENY_ROOT 1
 #define MAILDIR "/var/mail"
+#define QEXT ".mailq"
+#define SAFECAT "/usr/bin/safecat"
 #define MAIL_GID (8)
 
+#define SCRIPTDIR "/home/tpikonen/mailscript/git-mailscript/msmtp"
 
 /* Check if a given shell is in /etc/shells */
 void checkshell(const char *shell)
@@ -122,6 +125,36 @@ void mboxmail(const char *uname, const char *cname)
     fclose(f);
     exit(0);
 }
+
+
+void maildirmail(const char *uname, int uid, const char *homedir)
+{
+    char *safecat = SAFECAT;
+    char mdirtmp[SLEN];
+    char mdirnew[SLEN];
+    char *argv[4];
+    struct stat ss;
+
+    /* Check maildir components and perms */
+    snprintf(mdirtmp, SLEN-1, "%s/%s%s/%s", MAILDIR, uname, QEXT, "tmp");
+    if(stat(mdirtmp, &ss) < 0 || ss.st_uid != uid /* || ss.st_gid != MAIL_GID */
+            || !S_ISDIR(ss.st_mode) /* || (ss.st_mode & 0777) != 0660 */ )
+    {
+        exit(1);
+    }
+    snprintf(mdirnew, SLEN-1, "%s/%s%s/%s", MAILDIR, uname, QEXT, "new");
+    if(stat(mdirnew, &ss) < 0 || ss.st_uid != uid /* || ss.st_gid != MAIL_GID */
+            || !S_ISDIR(ss.st_mode) /* || (ss.st_mode & 0777) != 0660 */ )
+    {
+        exit(1);
+    }
+    argv[0] = safecat;
+    argv[1] = mdirtmp;
+    argv[2] = mdirnew;
+    argv[3] = NULL;
+    execprog(argv, uname, homedir);
+}
+
 
 /* Output users' ~/.forward file to stdout
  * Return values:
@@ -318,7 +351,9 @@ int main(int argc, char *argv[])
     if(setuid(uid) != 0) {
         exit(4);
     }
-    if(!strncmp(cmd, "cat-forward", 12)) {
+    if(!strncmp(cmd, "maildir", 12)) {
+        maildirmail(uname, uid, homedir);
+    } else if(!strncmp(cmd, "cat-forward", 12)) {
         catforward(uid, homedir);
     } else if(!strncmp(cmd, "run-forward", 12)) {
         unsigned int lineno;

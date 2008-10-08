@@ -23,6 +23,15 @@ suid helper must do:
   + If yes, runs 'mmda run-queue'
 
 * New design with commands:
-    mmda user : runs .forward and outputs local usernames which were found in 
-        the .forward file. If user cannot send external mail (script 'can-send')        output also the external addresses
-    mmda -s user : sends out the mails in users queue
+    mmda deliver user 
+        Runs .forward and delivers mail to pipes, named files
+        (mboxes) and to the users default mailbox if '(\)user' -line is 
+        present. Other local and external mail addresses found in the 
+        .forward file are output to stdout
+    mmda forward user
+        The same as deliver, but if user can send external mail, the external 
+        mail forwards in .forward are placed in the outgoing mail queue of
+        user. If user cannot send external mail, functions exactly like
+        'mmda deliver', i.e. output the exteral mail addresses in .forward
+    mmda flush user 
+        Attempts to send out the mails in users outgoing mail queue.

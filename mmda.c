@@ -51,12 +51,13 @@ void execprog(char * const argv[], const char *homedir)
     newenv[0] = path;
     newenv[1] = home;
     newenv[2] = NULL;
-
+/*
     i = 0;
     while(argv[i] != NULL) {
         printf("argv%d: %s\n", i, argv[i]);
         i++;
     }
+*/
     execve(argv[0], argv, newenv);
     printf("error: returning from exec\n");
     exit(1);
@@ -230,21 +231,23 @@ void eat_wspace(char *buf)
 }
 
 
-void runforward(const char *fwdname, FILE *mfile, const char *uname, const char *homedir, char *cname)
+void runforward(const char *fwdname, FILE *mfile, const char *uname, 
+                const char *homedir, char *cname, int send)
 {
     FILE *fwd;
     char buf[SLEN];
     int blen;
-    int can_send;
+    int status;
+    char *sargv[SLEN];
+    int sargc;
+    char scriptname[SLEN];
 
     fwd = fopen(fwdname, "r");
     if(fwd == NULL) {
         exit(1);
     }
 
-// FIXME: check is user can send external mail
-    can_send = 0;
-
+    sargc = 1;
     while(!feof(fwd)) {
         fseek(mfile, 0, SEEK_SET);
         if(fgets(buf, SLEN, fwd) == NULL) {
@@ -272,15 +275,14 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname, const char 
             buf[end-buf-1] = '\0';
         }
         eat_wspace(buf);
-        printf("unquoted: ***%s***\n", buf);
+//        printf("unquoted: ***%s***\n", buf);
         if(buf[0] == '\\') {
             strncpy(buf, buf+1, SLEN);
         }
         if(buf[0] == '|') {
             char *argv[SLEN];
             char *tok;
-            int i, status;
-            pid_t cpid;
+            int i;
 
             i = 0;
             tok = strtok(buf+1, " \n");
@@ -290,22 +292,20 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname, const char 
                 tok = strtok(NULL, " \n");
                 argv[i] = tok;
             }
-            cpid = fork();
-            if(cpid < 0) {
-                exit(123);
-            }
-            if(cpid == 0) {
-                dup2(fileno(mfile), 0);         
-                execprog(argv, homedir);
-            }
-            wait(&status);
+            runprog(argv, mfile, homedir);
         } else if(buf[0] == '/') {
             mboxmail(mfile, buf, cname);
         } else if(strchr(buf, '@')) {
-            if(can_send) {
-                ;
+            if(send) {
+                sargv[sargc] = (char *) malloc(strlen(buf)+1);
+                if(sargv[sargc] != NULL) {
+                    strcpy(sargv[sargc], buf);
+                    sargc++;
+                } else {
+                    exit(1);
+                }
             } else {
-                printf("mail: %s\n", buf); //FIXME: debug
+                printf("%s\n", buf);
             }
         } else if(strncmp(uname, buf, SLEN) == 0) {
                 char mboxname[SLEN];
@@ -317,7 +317,18 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname, const char 
         }
     }
     fclose(fwd);
-    exit(1);
+
+    if(send) {
+        snprintf(scriptname, SLEN-1, "%s/%s", SCRIPTDIR, "queue-mail");
+        sargv[0] = scriptname;
+        sargv[sargc] = NULL;
+        status = runprog(sargv, mfile, homedir);
+        if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            exit(66);
+        }
+        // FIXME: Maybe run free() on sargv[>0]
+    }
+    exit(0);
 }
 
 void runscript(const char *scriptname, const char *uname, const char *homedir)
@@ -338,20 +349,17 @@ int main(int argc, char *argv[])
     struct passwd *callerinfo;
     uid_t uid, cuid;
     gid_t gid;
-    char *uname;
+    char *uname, *cmd;
     char cname[SLEN];
     char shell[SLEN];
     char homedir[SLEN];
     char fwdname[SLEN];
-    int c;
-    FILE *mfile;
-    int statret;
-    struct stat ss;
 
     if(argc < 3) {
         exit(1);
     }
-    uname = argv[1];
+    cmd = argv[1];
+    uname = argv[2];
 #if DENY_ROOT
     if(!strncmp(uname, "root", 5)) {
         exit(2);
@@ -389,32 +397,55 @@ int main(int argc, char *argv[])
         exit(4);
     }
     
-    snprintf(fwdname, SLEN-1, "%s/mailscript/git-mailscript/forward", homedir);
-    printf("fwd: %s\n", fwdname);
-    statret = stat(fwdname, &ss);
-    if((statret != 0) || ((ss.st_uid != uid) && (ss.st_uid != 0))) {
-        /* .forward does not exist or not owned by user or root */
-        char mboxname[SLEN];
+    if(!strncmp(cmd, "deliver", 7) || !strncmp(cmd, "forward", 7)) {
+        int send, status, c;
+        FILE *mfile;
+        int statret;
+        struct stat ss;
 
-        snprintf(mboxname, SLEN, "%s/%s", MAILDIR, uname);
-        return mboxmail(stdin, mboxname, cname);    
-    }
-    
-    mfile = tmpfile();
-    if(mfile == NULL) {
-        return 1;
-    }
-    c = getc(stdin);
-    while(!feof(stdin)) {
-        putc(c, mfile);
+        snprintf(fwdname, SLEN-1, "%s/mailscript/git-mailscript/forward", homedir);
+        printf("fwd: %s\n", fwdname);
+        statret = stat(fwdname, &ss);
+        if((statret != 0) || ((ss.st_uid != uid) && (ss.st_uid != 0))) {
+            /* .forward does not exist or not owned by user or root */
+            char mboxname[SLEN];
+
+            snprintf(mboxname, SLEN, "%s/%s", MAILDIR, uname);
+            return mboxmail(stdin, mboxname, cname);    
+        }
+        send = 0;
+        if(!strncmp(cmd, "forward", 7)) {
+            char *sargv[SLEN];
+            char scriptname[SLEN];
+
+            /* Check if we can send external mail */
+            snprintf(scriptname, SLEN-1, "%s/%s", SCRIPTDIR, "can-send");
+            sargv[0] = scriptname;
+            sargv[1] = NULL;
+            status = runprog(sargv, stdin, homedir);
+            if(WIFEXITED(status) && !WEXITSTATUS(status)) {
+                send = 1;
+            }
+        }
+        mfile = tmpfile();
+        if(mfile == NULL) {
+            return 1;
+        }
         c = getc(stdin);
-    }
-    if(ferror(mfile)) {
-        /* some error */
-        return 1;
+        while(!feof(stdin)) {
+            putc(c, mfile);
+            c = getc(stdin);
+        }
+        if(ferror(mfile)) {
+            /* some error */
+            return 1;
+        }
+        return runforward(fwdname, mfile, uname, homedir, cname, send);
+    } else if(!strncmp(cmd, "flush", 5)) {
+        ;
+    } else {
+        printf("Unknown command\n");
     }
 
-    runforward(fwdname, mfile, uname, homedir, cname);
-
-    return 33;
+    return 66;
 }

@@ -63,6 +63,24 @@ void execprog(char * const argv[], const char *homedir)
 }
 
 
+int runprog(char * const argv[], FILE *input, const char *homedir)
+{
+    int status;
+    pid_t cpid;
+
+    cpid = fork();
+    if(cpid < 0) {
+        exit(123);
+    }
+    if(cpid == 0) {
+        dup2(fileno(input), 0);
+        execprog(argv, homedir);
+    }
+    wait(&status);
+
+    return status;
+}
+
 /* Make sure a correct mbox file for user exists */
 /* This function is run as suid root */
 void touchmbox(const char *uname, int uid)

@@ -19,8 +19,6 @@
 #define SLEN 1024
 #define DENY_ROOT 1
 #define MAILDIR "/var/mail"
-#define QEXT ".mailq"
-#define SAFECAT "/usr/bin/safecat"
 #define MAIL_GID (8)
 
 #define SCRIPTDIR "/home/tpikonen/mailscript/git-mailscript/msmtp"
@@ -51,8 +49,9 @@ void execprog(char * const argv[], const char *homedir)
     newenv[0] = path;
     newenv[1] = home;
     newenv[2] = NULL;
-/*
+
     i = 0;
+/*
     while(argv[i] != NULL) {
         printf("argv%d: %s\n", i, argv[i]);
         i++;
@@ -357,7 +356,7 @@ int main(int argc, char *argv[])
             /* some error */
             return 1;
         }
-        return runforward(fwdname, mfile, uname, homedir, cname, send);
+        runforward(fwdname, mfile, uname, homedir, cname, send);
     } else if(!strncmp(cmd, "flush", 5)) {
         ;
     } else {

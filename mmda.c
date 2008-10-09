@@ -320,7 +320,6 @@ int main(int argc, char *argv[])
         struct stat ss;
 
         snprintf(fwdname, SLEN-1, "%s/mailscript/git-mailscript/forward", homedir);
-        printf("fwd: %s\n", fwdname);
         statret = stat(fwdname, &ss);
         if((statret != 0) || ((ss.st_uid != uid) && (ss.st_uid != 0))) {
             /* .forward does not exist or not owned by user or root */
@@ -357,7 +356,7 @@ int main(int argc, char *argv[])
             return 1;
         }
         runforward(fwdname, mfile, uname, homedir, cname, send);
-    } else if(!strncmp(cmd, "flush", 5)) {
+    } else if(!strncmp(cmd, "send", 5)) {
         ;
     } else {
         printf("Unknown command\n");

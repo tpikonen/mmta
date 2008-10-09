@@ -3,9 +3,11 @@
 # Copyright: 2008 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
-SCRIPTS="/home/tpikonen/mailscript/git-mailscript/src"
+SCRIPTS="/home/tpikonen/mailscript/git-mailscript/msmtp"
+MMDA="/home/tpikonen/mailscript/git-mailscript/mmda"
 PWFILE="/etc/passwd"
 ALIASFILE="./aliases"
+CONFFILE="/home/tpikonen/mailscript/git-mailscript/mmtarc"
 
 ALIST=""
 
@@ -15,8 +17,8 @@ ALIST=""
 # append $A to $LIST
 append ()
 {
-    if [ -z $1 ] ; then
-        echo $2
+    if [ -z "$1" ] ; then
+        echo "$2"
     else
         echo "$1,$2"
     fi
@@ -27,7 +29,7 @@ append ()
 # Get the tail part of $LIST, or empty string if list has one element
 cdr ()
 {
-    echo $1 | sed 's/^[^,]*,*\(.*\)/\1/'
+    echo "$1" | sed 's/^[^,]*,*\(.*\)/\1/'
 }
 
 
@@ -36,8 +38,8 @@ cdr ()
 contains()
 {
     local PLIST ITEM P
-    PLIST=$1
-    ITEM=$2
+    PLIST="$1"
+    ITEM="$2"
     P=""
     while [ "$PLIST" != "$P" ] ; do
         P=${PLIST%%,*}
@@ -55,10 +57,10 @@ contains()
 filterlist ()
 {
     local PRED LIST A ALIST OUTLIST
-    PRED=$1
-    LIST=$2
+    PRED="$1"
+    LIST="$2"
     A=""
-    ALIST=$LIST
+    ALIST="$LIST"
     OUTLIST=""
     while [ "$A" != "$ALIST" ] ; do
         A=${ALIST%%,*}
@@ -133,7 +135,7 @@ resolve_aliases()
     A=""
     while [ -n "$ALIST" ] ; do
         A=${ALIST%%,*}
-        ALIST=$(cdr $ALIST)
+        ALIST=$(cdr "$ALIST")
         if contains "$PROCESSED" "$A" ; then
             echo "Warning: aliases file contains a loop with user $A" 1>&2
             continue
@@ -231,30 +233,30 @@ while PAR="$1"; shift ; do
     RECIPIENTS="$RECIPIENTS,$PAR"
 done
 
-ALIST=$RECIPIENTS
-A=""
-INET_RECV=""
-LOC_RECV=""
-HOSTNAME=$(hostname)
-while [ "$A" != "$ALIST" ] ; do
-    A=${ALIST%%,*}
-    ALIST=${ALIST#*,}
-    R=${A%%@localhost*}
-    R=${R%%@$HOSTNAME}
-    case $R in 
-        *@*)
-            INET_RECV=$(append "$INET_RECV" "$R") ;;
-        *)
-            resolve_aliases $R
-            LOC_RECV=$(append "$LOC_RECV" "$AL_LOCLIST") ;;
-    esac
-done
-# Remove dups, check if local usernames are valid
-INET_RECV=$(echo -n ${INET_RECV#,} | tr ',' '\n' | sort | uniq | tr '\n' ',')
-INET_RECV=${INET_RECV#,}
-INET_RECV=${INET_RECV%%,}
-LOC_RECV=$(echo ${LOC_RECV#,} | tr ',' '\n' | sort | uniq | tr '\n' ',')
-LOC_RECV=$(filterlist check_username ${LOC_RECV})
+#ALIST=$RECIPIENTS
+#A=""
+#INET_RECV=""
+#LOC_RECV=""
+#HOSTNAME=$(hostname)
+#while [ "$A" "$ALIST" ] ; do
+#    A=${ALIST%%,*}
+#    ALIST=${ALIST#*,}
+#    R=${A%%@localhost*}
+#    R=${R%%@$HOSTNAME}
+#    case $R in 
+#        *@*)
+#            INET_RECV=$(append "$INET_RECV" "$R") ;;
+#        *)
+#            resolve_aliases $R
+#            LOC_RECV=$(append "$LOC_RECV" "$AL_LOCLIST") ;;
+#    esac
+#done
+## Remove dups, check if local usernames are valid
+#INET_RECV=$(echo -n ${INET_RECV#,} | tr ',' '\n' | sort | uniq | tr '\n' ',')
+#INET_RECV=${INET_RECV#,}
+#INET_RECV=${INET_RECV%%,}
+#LOC_RECV=$(echo ${LOC_RECV#,} | tr ',' '\n' | sort | uniq | tr '\n' ',')
+#LOC_RECV=$(filterlist check_username ${LOC_RECV})
 
 #echo "INET_RECV: $INET_RECV"
 #echo "LOC_RECV: $LOC_RECV"
@@ -279,68 +281,69 @@ cat >> $TEMPF
 
 #exit 0
 
-# Should do delivery of supplied inet addresses first
-# queue_mail $INET_RECV
+
+. $CONFFILE
+
+$CANSEND
+SEND_INET=$?
+if [ $SEND_INET = "0" ] ; then
+    MARG="deliver"
+else
+    MARG="forward"
+fi
+
+echo "MARG: $MARG"
 
 #echo "/// Starting delivery ///"
 # Local delivery
 #echo "LOC_RECV: |${LOC_RECV}|" 
 LOCAL_SENT=""
-ALIST=$LOC_RECV
-A=""
+INET_RECV=""
+#ALIST=$LOC_RECV
+ALIST=$RECIPIENTS
 while [ -n "$ALIST" ]; do 
     A=${ALIST%%,*} 
-    ALIST=$(cdr $ALIST) 
-#    echo $A
+    ALIST=$(cdr "$ALIST")
+    echo "A1: $A"
+    echo "ALIST1: $ALIST"
+    R=${A%%@localhost*}
+    R=${R%%@$HOSTNAME}
+    case $R in
+        *@*)
+            INET_RECV=$(append "$INET_RECV" "$R")
+            continue ;;
+        *)
+            resolve_aliases $R
+            ALIST=$(append "$AL_LOCLIST" "$ALIST") ;;
+    esac
+    A=${ALIST%%,*}
+    ALIST=$(cdr "$ALIST")
+    echo "A2: $A"
+    echo "ALIST2: $ALIST"
+    echo "sending: $A"
+    if check_username "$A" ; then
+        true
+    else
+        continue
+    fi
     if contains "$LOCAL_SENT" "$A" ; then
         continue
     fi
-    $SCRIPTS/mmda $A cat-forward > /dev/null 
-    if [ $? -ne 0 ] ; then
-        cat $TEMPF | $SCRIPTS/mmda $A mbox
-        LOCAL_SENT=$(append "$LOCAL_SENT" "$A")
-        continue
-    fi
-    INDEX=1
-    INET_FWDS=""
-    TMPFWD=$(tempfile)
-#    $SCRIPTS/mmda $A cat-forward > $TMPFWD 
-    cat /home/tpikonen/mailscript/forward > $TMPFWD
-    while read LINE ; do
-        echo $LINE
-        if echo $LINE | grep -q '^#' ; then
-            echo "->kommentti"
-            continue
-        elif echo $LINE | grep -q '^[[:space:]]*/' ; then
-            echo "->tiedosto"
-            cat $TEMPF | $SCRIPTS/mmda $A run-forward $INDEX
-        elif echo $LINE | grep -q "^[[:space:]]*[\"']*|" ; then
-            echo "->pipe"
-            cat $TEMPF | $SCRIPTS/mmda $A run-forward $INDEX
-        elif echo $LINE | grep -q "^[[:space:]]*[\\\\]*$A *$" ; then
-            echo "->mbox"
-            cat $TEMPF | $SCRIPTS/mmda $A mbox
-            LOCAL_SENT=$(append "$LOCAL_SENT" "$A")
-        elif echo $LINE | grep -q '@' ; then
-            echo "->inet"
-            IADDRESS=$(echo $LINE | sed 's/.*\s\s*\(\S\S*@\S\S*\).*/\1/')
-            INET_FWDS=$(append "$INET_FWDS" "$IADDRESS")
-        else # if no match, assume local user account
-            echo "->local"
-            MAYBE_USER=$(echo $LINE | sed 's/^\s*\(\S\S*\).*/\1/')
-            if check_username $MAYBE_USER ; then
-                ALIST=$(append "$ALIST" "$MAYBE_USER")
-            else
-                echo "Warning: unknown local user $MAYBE_USER in .forward of $A" >&2
-            fi
-        fi
-        INDEX=$(expr $INDEX + 1)
-    done < $TMPFWD
-    rm -f $TMPFWD
-    # if sender can send inet-mail, put INET_FWDS to his mailq,
-    # otherwise try to use receiving users mailq
+    FLIST=$(cat $TEMPF | $MMDA $MARG $A | sed -n '1h;1!H;${;g;s/\n/, /g;p;}')
+    echo "FLIST: $FLIST"
+    ALIST=$(append "$FLIST" "$ALIST")
+    LOCAL_SENT=$(append "$LOCAL_SENT" "$A")
 done
- 
-#echo "sent to: $LOCAL_SENT"
+
+echo "INET_RECV: $INET_RECV"
+
+# Do internet delivery
+if [ $SEND_INET = "0" ] ; then
+    QARGS=$(echo $INET_RECV | sed 's/, / /g')
+    echo $QARGS
+#    cat $TEMPF | $QUEUEMAIL $QARGS
+fi
+
+echo "sent to: $LOCAL_SENT"
 #echo "inet to: $INET_FWDS"
 rm -f $TEMPF

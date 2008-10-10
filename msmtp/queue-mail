@@ -1,0 +1,11 @@
+#!/bin/sh
+
+MAILDIR="/var/mail/$(whoami).mailq"
+MTMP="$MAILDIR/tmp"
+MNEW="$MAILDIR/new"
+HEADER="X-mmta-envelope-to:"
+
+(echo -n "$HEADER "
+echo -n "$1" ; shift
+while R=$1 ; shift ; do echo -n ", ${R}" ; done ; echo
+cat) | /usr/bin/safecat $MTMP $MNEW > /dev/null 2>&1

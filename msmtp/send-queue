@@ -1,0 +1,12 @@
+#!/bin/sh
+
+MAILDIR="/var/mail/$(whoami).mailq"
+HEADER="X-mmta-envelope-to:"
+
+for M in $(find $MAILDIR/new $MAILDIR/cur -type f) ; do
+    echo "FILE: $M"
+    RECIPIENTS=$(head -n 1 $M | sed -n "s/^$HEADER//p" | tr ',' ' ') 
+    echo "RECIPIENTS: $RECIPIENTS"
+    tail -n +2 $M
+#    tail -n +2 $M | /usr/bin/msmtp -- $RECIPIENTS
+done

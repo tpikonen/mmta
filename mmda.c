@@ -58,7 +58,7 @@ void execprog(char * const argv[], const char *homedir)
     }
 */
     execve(argv[0], argv, newenv);
-    printf("error: returning from exec\n");
+//    printf("error: returning from exec\n");
     exit(1);
 }
 
@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
             sargv[0] = scriptname;
             sargv[1] = NULL;
             status = runprog(sargv, stdin, homedir);
-            if(WIFEXITED(status) && !WEXITSTATUS(status)) {
+            if(WIFEXITED(status) && WEXITSTATUS(status) == 0) {
                 send = 1;
             }
         }

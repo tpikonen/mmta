@@ -5,6 +5,7 @@ prefix ?= /usr/local
 exec_prefix ?= $(prefix)
 datarootdir ?= $(prefix)/share
 bindir ?= $(exec_prefix)/bin
+sbindir ?= $(exec_prefix)/sbin
 libexecdir ?= $(exec_prefix)/lib
 man1dir ?= $(datarootdir)/man/man1
 
@@ -17,7 +18,7 @@ SYSCONFDIR ?= "/etc/mmta"
 all: mmda sendmail
 
 install: mmda sendmail
-	install -D --mode=a=rx,u+w sendmail $(bindir)/sendmail
+	install -D --mode=a=rx,u+w sendmail $(sbindir)/sendmail
 	install -D --mode=a=rx,u+ws --strip mmda $(MMDABIN)
 	install -d $(datarootdir)/mmta
 	install -D --mode=a=rx,u+w scripts/* $(datarootdir)/mmta

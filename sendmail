@@ -3,14 +3,12 @@
 # Copyright: 2008 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
-SCRIPTS="/home/tpikonen/mailscript/git-mailscript/msmtp"
 MMDA="/home/tpikonen/mailscript/git-mailscript/mmda"
 PWFILE="/etc/passwd"
 ALIASFILE="./aliases"
 USERCONFDIR="$HOME/.config/mmta"
 SYSCONFDIR="/home/tpikonen/mailscript/git-mailscript/msmtp"
 
-ALIST=""
 
 # Routines for handling comma-separated lists
 
@@ -87,6 +85,7 @@ check_username()
     return $?
 }
 
+
 # get_aliases $UNAME
 # echo the logical line after $UNAME: in $ALIASFILE
 get_aliases()
@@ -118,6 +117,7 @@ get_aliases()
 }"
     return 1
 }
+
 
 # resolve_aliases $USER
 # Recursively alias-expand $USER. Output in global vars AL_LOCLIST, etc.
@@ -160,20 +160,9 @@ resolve_aliases()
                 fi ;;
         esac
     done
-#    AL_LOCLIST=${AL_LOCLIST#,}
-#    AL_INETLIST=${AL_INETLIST#,}
-#    AL_PIPELIST=${AL_PIPELIST#,}
-#    AL_FILELIST=${AL_FILELIST#,}
-#    AL_INCLIST=${AL_INCLIST#,}
-#        echo "AL_LOCLIST: $AL_LOCLIST"
-#        echo "AL_INETLIST: $AL_INETLIST"
-#        echo "AL_PIPELIST: $AL_PIPELIST"
-#        echo "AL_FILELIST: $AL_FILELIST"
-#        echo "AL_INCLIST: $AL_INCLIST"
     if [ -z "$AL_LOCLIST" ] ; then
         AL_LOCLIST=$USER
     fi
-#    echo "$AL_LOCLIST"
     return 1
 }
 
@@ -193,6 +182,7 @@ find_script ()
         exit 1
     fi
 }
+
 
 # Mail errors to sender by default
 MAIL_ERRORS=1
@@ -248,54 +238,13 @@ while PAR="$1"; shift ; do
     RECIPIENTS="$RECIPIENTS,$PAR"
 done
 
-#ALIST=$RECIPIENTS
-#A=""
-#INET_RECV=""
-#LOC_RECV=""
-#HOSTNAME=$(hostname)
-#while [ "$A" "$ALIST" ] ; do
-#    A=${ALIST%%,*}
-#    ALIST=${ALIST#*,}
-#    R=${A%%@localhost*}
-#    R=${R%%@$HOSTNAME}
-#    case $R in 
-#        *@*)
-#            INET_RECV=$(append "$INET_RECV" "$R") ;;
-#        *)
-#            resolve_aliases $R
-#            LOC_RECV=$(append "$LOC_RECV" "$AL_LOCLIST") ;;
-#    esac
-#done
-## Remove dups, check if local usernames are valid
-#INET_RECV=$(echo -n ${INET_RECV#,} | tr ',' '\n' | sort | uniq | tr '\n' ',')
-#INET_RECV=${INET_RECV#,}
-#INET_RECV=${INET_RECV%%,}
-#LOC_RECV=$(echo ${LOC_RECV#,} | tr ',' '\n' | sort | uniq | tr '\n' ',')
-#LOC_RECV=$(filterlist check_username ${LOC_RECV})
-
-#echo "INET_RECV: $INET_RECV"
-#echo "LOC_RECV: $LOC_RECV"
-
 TEMPF=`tempfile`
 if [ "$?" != "0" ] ; then 
     echo "Could not create a temporary file"
     return 1
 fi
 
-#SENDER=`whoami`
-#DATE=`date`
-#echo "From $SENDER $DATE" > $TEMPF
-
 cat >> $TEMPF
-## From_ quoting, is it necessary?
-##sed 's/^\(>*From \)/>\1/' >> $TEMPF
-#echo >> $TEMPF
-#
-#echo $TEMPF
-#cat $TEMPF
-
-#exit 0
-
 
 find_script "can-send" "CAN_SEND"
 find_script "queue-mail" "QUEUE_MAIL"
@@ -309,8 +258,6 @@ else
     MARG="forward"
 fi
 
-#echo "MARG: $MARG"
-
 # Local delivery loop
 LOCAL_SENT=""
 INET_RECV=""
@@ -319,8 +266,6 @@ ALIST=$RECIPIENTS
 while [ -n "$ALIST" ]; do 
     A=${ALIST%%,*} 
     ALIST=$(cdr "$ALIST")
-#    echo "A1: $A"
-#    echo "ALIST1: $ALIST"
     R=${A%%@localhost*}
     R=${R%%@$HOSTNAME}
     case $R in
@@ -342,9 +287,7 @@ while [ -n "$ALIST" ]; do
     if contains "$LOCAL_SENT" "$R" ; then
         continue
     fi
-#    echo "sending: $R"
     FLIST=$(cat $TEMPF | $MMDA $MARG $R | sed -n '1h;1!H;${;g;s/\n/,/g;p;}')
-#    echo "FLIST: $FLIST"
     ALIST=$(append "$FLIST" "$ALIST")
     LOCAL_SENT=$(append "$LOCAL_SENT" "$R")
     if [ "$SEND_INET" != "0" ] ; then
@@ -352,16 +295,10 @@ while [ -n "$ALIST" ]; do
     fi
 done
 
-#echo "INET_RECV: $INET_RECV"
-#echo "FORWARDERS: $FORWARDERS"
-
-#FIXME: Check if we're online?
-
 # Do internet delivery
 if [ $SEND_INET = "0" ] ; then
     QARGS=$(echo $INET_RECV | sed 's/, / /g')
-#    echo $QARGS
-#    cat $TEMPF | $QUEUE_MAIL $QARGS
+    cat $TEMPF | $QUEUE_MAIL $QARGS
 #    $SEND_QUEUE
 else
     if [ -n "$INET_RECV" ] ; then
@@ -377,10 +314,5 @@ else
 #    done
 fi
 
-#echo "sent to: $LOCAL_SENT"
-#echo "inet to: $INET_RECV"
 rm -f $TEMPF
-
-#read
-
 exit 0

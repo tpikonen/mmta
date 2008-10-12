@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
         int statret;
         struct stat ss;
 
-        snprintf(fwdname, SLEN-1, "%s/mailscript/git-mailscript/forward", homedir);
+        snprintf(fwdname, SLEN-1, "%s/.forward", homedir);
         statret = stat(fwdname, &ss);
         if((statret != 0) || ((ss.st_uid != uid) && (ss.st_uid != 0))) {
             /* .forward does not exist or not owned by user or root */

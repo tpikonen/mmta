@@ -8,6 +8,7 @@ PWFILE="/etc/passwd"
 ALIASFILE="./aliases"
 USERCONFDIR="$HOME/.config/mmta"
 SYSCONFDIR="/home/tpikonen/mailscript/git-mailscript/msmtp"
+IS_ONLINE="ping -c 1 -w 2 www.google.com > /dev/null 2>&1"
 
 
 # Routines for handling comma-separated lists
@@ -299,19 +300,23 @@ done
 if [ $SEND_INET = "0" ] ; then
     QARGS=$(echo $INET_RECV | sed 's/, / /g')
     cat $TEMPF | $QUEUE_MAIL $QARGS
-#    $SEND_QUEUE
+    if $IS_ONLINE ; then
+        $SEND_QUEUE
+    fi
 else
     if [ -n "$INET_RECV" ] ; then
         echo "Warning: Could not send to following external addresses:" >&2
         echo "$INET_RECV" | tr ',' '\n' >&2  
     fi
-    # Run outgoing queues from people who were sent mail
-#    ALIST=$FORWARDERS
-#    while [ -n "$FORWARDERS" ] ; do
-#        A=${ALIST%%,*} 
-#        ALIST=$(cdr "$ALIST")
-#        $MMDA send $A &        
-#    done
+    if $IS_ONLINE ; then
+        # Run outgoing queues from people who were sent mail
+        ALIST=$FORWARDERS
+        ( while [ -n "$FORWARDERS" ] ; do
+            A=${ALIST%%,*}
+            ALIST=$(cdr "$ALIST")
+            $MMDA send $A &
+        done ) &
+    fi
 fi
 
 rm -f $TEMPF

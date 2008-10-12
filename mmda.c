@@ -22,6 +22,8 @@
 #define MAIL_GID (8)
 
 #define SCRIPTDIR "/home/tpikonen/mailscript/git-mailscript/msmtp"
+#define USERCONFDIR "$HOME/.config/mmta"
+#define SYSCONFDIR "/home/tpikonen/mailscript/git-mailscript/msmtp"
 
 /* Check if a given shell is in /etc/shells */
 void checkshell(const char *shell)
@@ -145,6 +147,24 @@ int mboxmail(FILE* infile, const char *mboxname, const char *cname)
 }
 
 
+char *find_script(char *fullpath, const char *script, const char *homedir)
+{
+    struct stat ss;
+
+    snprintf(fullpath, SLEN, "%s/%s/%s", homedir, USERCONFDIR, script);
+    if(!stat(fullpath, &ss) && (ss.st_mode & S_IXUSR)) {
+        return fullpath;
+    } else {
+        snprintf(fullpath, SLEN, "%s/%s", SYSCONFDIR, script);
+        if(!stat(fullpath, &ss) && (ss.st_mode & S_IXUSR)) {
+            return fullpath;
+        } else {
+            return NULL;
+        }
+    }
+}
+
+
 void eat_wspace(char *buf)
 {
     int i;
@@ -245,8 +265,7 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
     }
     fclose(fwd);
 
-    if(send) {
-        snprintf(scriptname, SLEN-1, "%s/%s", SCRIPTDIR, "queue-mail");
+    if(send && find_script(scriptname, "queue-mail", homedir)) {
         sargv[0] = scriptname;
         sargv[sargc] = NULL;
         status = runprog(sargv, mfile, homedir);
@@ -331,15 +350,16 @@ int main(int argc, char *argv[])
         send = 0;
         if(!strncmp(cmd, "forward", 7)) {
             char *sargv[SLEN];
-            char scriptname[SLEN];
+            char script[SLEN];
 
             /* Check if we can send external mail */
-            snprintf(scriptname, SLEN-1, "%s/%s", SCRIPTDIR, "can-send");
-            sargv[0] = scriptname;
-            sargv[1] = NULL;
-            status = runprog(sargv, stdin, homedir);
-            if(WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-                send = 1;
+            if(find_script(script, "can-send", homedir)) {
+                sargv[0] = script;
+                sargv[1] = NULL;
+                status = runprog(sargv, stdin, homedir);
+                if(WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+                    send = 1;
+                }
             }
         }
         mfile = tmpfile();

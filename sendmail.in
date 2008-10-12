@@ -3,12 +3,12 @@
 # Copyright: 2008 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
-MMDA="/home/tpikonen/mailscript/git-mailscript/mmda"
-PWFILE="/etc/passwd"
-ALIASFILE="./aliases"
-USERCONFDIR="$HOME/.config/mmta"
-SYSCONFDIR="/home/tpikonen/mailscript/git-mailscript/msmtp"
+MMDA=@@MMDABIN@@
+USERCONFDIR="$HOME/@@USERCONFDIR@@"
+SYSCONFDIR=@@SYSCONFDIR@@
 IS_ONLINE="ping -c 1 -w 2 www.google.com > /dev/null 2>&1"
+PWFILE="/etc/passwd"
+ALIASFILE="/etc/aliases"
 
 
 # Routines for handling comma-separated lists
@@ -75,7 +75,7 @@ filterlist ()
 
 # Other functions
 
-# Check if a given username is in /etc/passwd 
+# Check if a given username is in /etc/passwd
 # and the users shell is in /etc/shells
 check_username()
 {
@@ -189,7 +189,7 @@ find_script ()
 MAIL_ERRORS=1
 FIRSTREC=""
 while PAR="$1"; shift ; do
-    case $PAR in 
+    case $PAR in
         # sendmail options defined in LSB:
         -bm) # Read msg from stdin, default
             ;;
@@ -264,8 +264,8 @@ LOCAL_SENT=""
 INET_RECV=""
 FORWARDERS=""
 ALIST=$RECIPIENTS
-while [ -n "$ALIST" ]; do 
-    A=${ALIST%%,*} 
+while [ -n "$ALIST" ]; do
+    A=${ALIST%%,*}
     ALIST=$(cdr "$ALIST")
     R=${A%%@localhost*}
     R=${R%%@$HOSTNAME}
@@ -275,7 +275,7 @@ while [ -n "$ALIST" ]; do
             continue ;;
         *)
             resolve_aliases $R
-            if [ "$R" != "$AL_LOCLIST" ] ; then 
+            if [ "$R" != "$AL_LOCLIST" ] ; then
                 ALIST=$(append "$AL_LOCLIST" "$ALIST")
                 continue
             fi ;;
@@ -306,7 +306,7 @@ if [ $SEND_INET = "0" ] ; then
 else
     if [ -n "$INET_RECV" ] ; then
         echo "Warning: Could not send to following external addresses:" >&2
-        echo "$INET_RECV" | tr ',' '\n' >&2  
+        echo "$INET_RECV" | tr ',' '\n' >&2
     fi
     if $IS_ONLINE ; then
         # Run outgoing queues from people who were sent mail

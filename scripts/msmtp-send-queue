@@ -1,4 +1,7 @@
 #!/bin/sh
+# Script to send messages from a mailqueue via msmtp
+# Copyright: 2008 Teemu Ikonen <tpikonen@gmail.com>
+# License: GPLv3+
 
 MAILDIR="/var/mail/$(whoami).mailq"
 HEADER="X-mmta-envelope-to:"

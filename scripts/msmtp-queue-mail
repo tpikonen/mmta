@@ -1,4 +1,7 @@
 #!/bin/sh
+# Script to add a message to mail queue
+# Copyright: 2008 Teemu Ikonen <tpikonen@gmail.com>
+# License: GPLv3+
 
 MAILDIR="/var/mail/$(whoami).mailq"
 MTMP="$MAILDIR/tmp"

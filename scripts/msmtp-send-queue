@@ -6,11 +6,18 @@
 MAILDIR="/var/mail/$(whoami).mailq"
 HEADER="X-mmta-envelope-to:"
 
+HOST=$(sed -n 's/^host\(.*\)/\1/p' $HOME/.msmtprc)
+ping -c 1 -w 2 $HOST > /dev/null 2>&1
+if [ $? != "0" ] ; then
+    exit 0
+fi
+
 dotlockfile -p "$MAILDIR/lock"
 for M in $(find $MAILDIR/new $MAILDIR/cur -type f) ; do
     RECIPIENTS=$(head -n 1 $M | sed -n "s/^$HEADER//p" | tr ',' ' ') 
-    tail -n +2 $M | /usr/bin/msmtp -- $RECIPIENTS
+    if tail -n +2 $M | /usr/bin/msmtp -- $RECIPIENTS ; then
+	rm -f $M
+    fi
     dotlockfile -t "$MAILDIR/lock"
-    rm -f $M
 done
 dotlockfile -u "$MAILDIR/lock"

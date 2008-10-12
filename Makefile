@@ -19,6 +19,8 @@ all: mmda sendmail
 install: mmda sendmail
 	install -D --mode=a=rx,u+w sendmail $(bindir)/sendmail
 	install -D --mode=a=rx,u+ws --strip mmda $(MMDABIN)
+	install -d $(datarootdir)/mmta
+	install -D --mode=a=rx,u+w scripts/* $(datarootdir)/mmta
 
 sendmail: sendmail.in
 	cat sendmail.in | sed -e "s,@@MMDABIN@@,$(MMDABIN),g" \

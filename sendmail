@@ -7,7 +7,8 @@ SCRIPTS="/home/tpikonen/mailscript/git-mailscript/msmtp"
 MMDA="/home/tpikonen/mailscript/git-mailscript/mmda"
 PWFILE="/etc/passwd"
 ALIASFILE="./aliases"
-CONFFILE="/home/tpikonen/mailscript/git-mailscript/mmtarc"
+USERCONFDIR="$HOME/.config/mmta"
+SYSCONFDIR="/home/tpikonen/mailscript/git-mailscript/msmtp"
 
 ALIST=""
 
@@ -177,6 +178,22 @@ resolve_aliases()
 }
 
 
+# find_script $SCRIPTFILE $SHELLVAR
+# Checks configuration directories for a given SCRIPTFILE and if
+# found, sets the shell variable whose name is given in SHELLVAR
+# to the full path of the script
+find_script ()
+{
+    if [ -x "$USERCONFDIR/$1" ] ; then
+        eval "$2=$USERCONFDIR/$1"
+    elif [ -x "$SYSCONFDIR/$1" ] ; then
+        eval "$2=$SYSCONFDIR/$1"
+    else
+        echo "Could not find script $1" >&2
+        exit 1
+    fi
+}
+
 # Mail errors to sender by default
 MAIL_ERRORS=1
 FIRSTREC=""
@@ -280,9 +297,11 @@ cat >> $TEMPF
 #exit 0
 
 
-. $CONFFILE
+find_script "can-send" "CAN_SEND"
+find_script "queue-mail" "QUEUE_MAIL"
+find_script "send-queue" "SEND_QUEUE"
 
-$CANSEND
+$CAN_SEND
 SEND_INET=$?
 if [ $SEND_INET = "0" ] ; then
     MARG="deliver"
@@ -342,8 +361,8 @@ done
 if [ $SEND_INET = "0" ] ; then
     QARGS=$(echo $INET_RECV | sed 's/, / /g')
 #    echo $QARGS
-#    cat $TEMPF | $QUEUEMAIL $QARGS
-#    $SENDQUEUE
+#    cat $TEMPF | $QUEUE_MAIL $QARGS
+#    $SEND_QUEUE
 else
     if [ -n "$INET_RECV" ] ; then
         echo "Warning: Could not send to following external addresses:" >&2

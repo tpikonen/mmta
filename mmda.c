@@ -22,7 +22,7 @@
 #define MAIL_GID (8)
 
 #define SCRIPTDIR "/home/tpikonen/mailscript/git-mailscript/msmtp"
-#define USERCONFDIR "$HOME/.config/mmta"
+#define USERCONFDIR ".config/mmta"
 #define SYSCONFDIR "/home/tpikonen/mailscript/git-mailscript/msmtp"
 
 /* Check if a given shell is in /etc/shells */

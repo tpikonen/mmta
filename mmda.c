@@ -377,7 +377,19 @@ int main(int argc, char *argv[])
         }
         runforward(fwdname, mfile, uname, homedir, cname, send);
     } else if(!strncmp(cmd, "send", 5)) {
-        ;
+        char *sargv[SLEN];
+        char script[SLEN];
+        int status;
+
+        if(find_script(script, "send-queue", homedir)) {
+            sargv[0] = script;
+            sargv[1] = NULL;
+            status = runprog(sargv, stdin, homedir);
+            if(WIFEXITED(status)) {
+                return WEXITSTATUS(status);
+            }
+        }
+        return 55;
     } else {
         printf("Unknown command\n");
     }

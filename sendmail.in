@@ -6,7 +6,7 @@
 MMDA=@@MMDABIN@@
 USERCONFDIR="$HOME/@@USERCONFDIR@@"
 SYSCONFDIR=@@SYSCONFDIR@@
-IS_ONLINE="ping -c 1 -w 2 www.google.com > /dev/null 2>&1"
+PINGHOST="www.google.com"
 PWFILE="/etc/passwd"
 ALIASFILE="/etc/aliases"
 
@@ -300,7 +300,7 @@ done
 if [ $SEND_INET = "0" ] ; then
     QARGS=$(echo $INET_RECV | sed 's/, / /g')
     cat $TEMPF | $QUEUE_MAIL $QARGS
-    if $IS_ONLINE ; then
+    if ping -c 1 -w 2 $PINGHOST > /dev/null 2>&1 ; then
         $SEND_QUEUE
     fi
 else
@@ -308,7 +308,7 @@ else
         echo "Warning: Could not send to following external addresses:" >&2
         echo "$INET_RECV" | tr ',' '\n' >&2
     fi
-    if $IS_ONLINE ; then
+    if ping -c 1 -w 2 $PINGHOST > /dev/null 2>&1 ; then
         # Run outgoing queues from people who were sent mail
         ALIST=$FORWARDERS
         ( while [ -n "$FORWARDERS" ] ; do

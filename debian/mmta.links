@@ -1,0 +1,3 @@
+usr/share/mmta/msmtp-can-send   etc/mmta/can-send
+usr/share/mmta/msmtp-queue-mail etc/mmta/queue-mail
+usr/share/mmta/msmtp-send-queue etc/mmta/send-queue

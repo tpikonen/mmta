@@ -32,4 +32,4 @@ mmda: mmda.c
 	gcc $(CFLAGS) -o mmda mmda.c -llockfile
 
 clean:
-	-rm -f mmda
+	-rm -f mmda sendmail

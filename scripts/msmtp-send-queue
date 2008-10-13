@@ -3,6 +3,8 @@
 # Copyright: 2008 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
+[ -x /usr/bin/msmtp ] || exit 1
+
 MAILDIR="/var/mail/$(whoami).mailq"
 HEADER="X-mmta-envelope-to:"
 

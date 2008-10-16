@@ -106,6 +106,7 @@ get_aliases()
 
 # resolve_aliases $USER
 # Recursively alias-expand $USER. Output in global vars AL_LOCLIST, etc.
+# If user does not have aliases, returns $USER
 resolve_aliases()
 {
     local USER PROCESSED A ALIST
@@ -123,7 +124,7 @@ resolve_aliases()
         A=${ALIST%%,*}
         ALIST=$(cdr "$ALIST")
         if contains "$PROCESSED" "$A" ; then
-            echo "Warning: aliases file contains a loop with user $A" 1>&2
+            echo "Warning: aliases file has a loop with user $A" 1>&2
             continue
         fi
         case "$A" in
@@ -223,7 +224,7 @@ while PAR="$1"; shift ; do
     RECIPIENTS="$RECIPIENTS,$PAR"
 done
 
-TEMPF=`tempfile`
+TEMPF=$(tempfile)
 if [ "$?" != "0" ] ; then 
     echo "Could not create a temporary file"
     return 1

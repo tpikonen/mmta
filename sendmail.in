@@ -283,6 +283,8 @@ while [ -n "$ALIST" ]; do
     fi
 done
 
+INET_RECV=$(echo -n ${INET_RECV} | tr ',' '\n' | sort | uniq | tr '\n' ',')
+
 # Do internet delivery
 if [ "$SEND_INET" = "0" ] ; then
     if [ -n "$INET_RECV" ] ; then

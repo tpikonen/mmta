@@ -128,7 +128,7 @@ int mboxmail(FILE* infile, const char *mboxname, const char *cname)
         return 3;
     }
     time(&t);
-    fprintf(f, "From %s %s\n", cname, ctime(&t)); //FIXME: doesn't print timezone
+    fprintf(f, "From %s %s", cname, ctime(&t)); //FIXME: doesn't print timezone
     c = getc(infile);
     while(!feof(infile)) {
         putc(c, f);

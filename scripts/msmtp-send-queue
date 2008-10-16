@@ -8,7 +8,7 @@
 MAILDIR="/var/mail/$(whoami).mailq"
 HEADER="X-mmta-envelope-to:"
 
-HOST=$(sed -n 's/^host\(.*\)/\1/p' $HOME/.msmtprc)
+HOST=$(sed -n 's/^host\s\s*\(.*\)/\1/p' $HOME/.msmtprc)
 ping -c 1 -w 2 $HOST > /dev/null 2>&1
 if [ $? != "0" ] ; then
     exit 0

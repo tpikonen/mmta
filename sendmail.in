@@ -170,6 +170,8 @@ find_script ()
 }
 
 
+[ -x $MMDA ] || exit 1
+
 # Mail errors to sender by default
 MAIL_ERRORS=1
 FIRSTREC=""

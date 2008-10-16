@@ -53,27 +53,6 @@ contains()
 }
 
 
-# filterlist $PRED $LIST
-# Filter out elements from a comma separated $LIST for which not $PRED elem
-filterlist ()
-{
-    local PRED LIST A ALIST OUTLIST
-    PRED="$1"
-    LIST="$2"
-    A=""
-    ALIST="$LIST"
-    OUTLIST=""
-    while [ "$A" != "$ALIST" ] ; do
-        A=${ALIST%%,*}
-        ALIST=${ALIST#*,}
-        if $PRED $A ; then
-            OUTLIST=$(append "$OUTLIST" "$A")
-        fi
-    done
-    echo $OUTLIST
-}
-
-
 # Other functions
 
 # Check if a given username is in /etc/passwd

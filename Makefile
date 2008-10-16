@@ -1,6 +1,3 @@
-ifneq ($(DESTDIR),)
-  prefix ?= $(DESTDIR)/usr
-endif
 prefix ?= /usr/local
 exec_prefix ?= $(prefix)
 datarootdir ?= $(prefix)/share
@@ -17,10 +14,10 @@ CFLAGS = -Wall -DUSERCONFDIR='$(USERCONFDIR)' -DSYSCONFDIR='$(SYSCONFDIR)'
 all: mmda sendmail
 
 install: mmda sendmail
-	install -D --mode=a=rx,u+w sendmail $(sbindir)/sendmail
-	install -D --mode=a=rx,u+ws --strip mmda $(MMDABIN)
-	install -d $(datarootdir)/mmta
-	install -D --mode=a=rx,u+w scripts/* $(datarootdir)/mmta
+	install -D --mode=a=rx,u+w sendmail $(DESTDIR)$(sbindir)/sendmail
+	install -D --mode=a=rx,u+ws --strip mmda $(DESTDIR)$(MMDABIN)
+	install -d $(DESTDIR)$(datarootdir)/mmta
+	install -D --mode=a=rx,u+w scripts/* $(DESTDIR)$(datarootdir)/mmta
 
 sendmail: sendmail.in
 	cat sendmail.in | sed -e 's,@@MMDABIN@@,$(MMDABIN),g' \

@@ -3,5 +3,8 @@
 # Copyright: 2008 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
+MAILDIR="/var/mail/$(whoami).mailq"
+
+[ -d "$MAILDIR" ] || exit 1
 [ -x /usr/bin/msmtp ] || exit 1
 /usr/bin/msmtp -P > /dev/null 2>&1

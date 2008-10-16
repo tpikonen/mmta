@@ -9,15 +9,12 @@ MAILDIR="/var/mail/$(whoami).mailq"
 HEADER="X-mmta-envelope-to:"
 
 HOST=$(sed -n 's/^host\s\s*\(.*\)/\1/p' $HOME/.msmtprc)
-ping -c 1 -w 2 $HOST > /dev/null 2>&1
-if [ $? != "0" ] ; then
-    exit 0
-fi
+ping -c 1 -w 2 $HOST > /dev/null 2>&1 || exit 0
 
 LOCALTO=$(whoami)
 INET_TO=$(sed -n 's/^from\s\s*\(.*\)/\1/p' $HOME/.msmtprc)
 
-dotlockfile -p "$MAILDIR/lock"
+dotlockfile -p "$MAILDIR/lock" || exit 1
 for M in $(find $MAILDIR/new $MAILDIR/cur -type f) ; do
     RECIPIENTS=$(head -n 1 $M | sed -n "s/^$HEADER//p" | tr ',' ' ') 
 # FIXME: sed cmd below does not work for multiline To: headers

@@ -11,6 +11,10 @@ PINGHOST="www.google.com"
 PWFILE="/etc/passwd"
 ALIASFILE="/etc/aliases"
 
+is_online ()
+{
+    ping -c 1 -w 2 $PINGHOST > /dev/null 2>&1
+}
 
 # Routines for handling comma-separated lists
 
@@ -280,7 +284,7 @@ done
 if [ $SEND_INET = "0" ] ; then
     QARGS=$(echo $INET_RECV | sed 's/, / /g')
     cat $TEMPF | $QUEUE_MAIL $QARGS
-    if ping -c 1 -w 2 $PINGHOST > /dev/null 2>&1 ; then
+    if is_online ; then
         $SEND_QUEUE
     fi
 else
@@ -288,7 +292,7 @@ else
         echo "Warning: Could not send to following external addresses:" >&2
         echo "$INET_RECV" | tr ',' '\n' >&2
     fi
-    if ping -c 1 -w 2 $PINGHOST > /dev/null 2>&1 ; then
+    if is_online ; then
         # Run outgoing queues from people who were sent mail
         ALIST=$FORWARDERS
         ( while [ -n "$FORWARDERS" ] ; do

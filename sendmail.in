@@ -284,11 +284,13 @@ while [ -n "$ALIST" ]; do
 done
 
 # Do internet delivery
-if [ "$SEND_INET" = "0" -a -n "$INET_RECV" ] ; then
-    QARGS=$(echo $INET_RECV | sed 's/, / /g')
-    cat $TEMPF | $QUEUE_MAIL $QARGS
-    if is_online ; then
-        $SEND_QUEUE
+if [ "$SEND_INET" = "0" ] ; then
+    if [ -n "$INET_RECV" ] ; then
+        QARGS=$(echo $INET_RECV | sed 's/, / /g')
+        cat $TEMPF | $QUEUE_MAIL $QARGS
+        if is_online ; then
+            $SEND_QUEUE
+        fi
     fi
 else
     if [ -n "$INET_RECV" ] ; then
@@ -298,10 +300,10 @@ else
     if is_online ; then
         # Run outgoing queues from people who were sent mail
         ALIST=$FORWARDERS
-        ( while [ -n "$FORWARDERS" ] ; do
+        ( while [ -n "$ALIST" ] ; do
             A=${ALIST%%,*}
             ALIST=$(cdr "$ALIST")
-            $MMDA send $A &
+            $MMDA send $A
         done ) &
     fi
 fi

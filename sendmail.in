@@ -284,7 +284,7 @@ while [ -n "$ALIST" ]; do
 done
 
 # Do internet delivery
-if [ $SEND_INET = "0" ] ; then
+if [ "$SEND_INET" = "0" -a -n "$INET_RECV" ] ; then
     QARGS=$(echo $INET_RECV | sed 's/, / /g')
     cat $TEMPF | $QUEUE_MAIL $QARGS
     if is_online ; then

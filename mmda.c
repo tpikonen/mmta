@@ -21,9 +21,8 @@
 #define MAILDIR "/var/mail"
 #define MAIL_GID (8)
 
-#define SCRIPTDIR "/home/tpikonen/mailscript/git-mailscript/msmtp"
-#define USERCONFDIR ".config/mmta"
-#define SYSCONFDIR "/home/tpikonen/mailscript/git-mailscript/msmtp"
+/* #define USERCONFDIR ".config/mmta" */
+/* #define SYSCONFDIR "/etc/mmta" */
 
 /* Check if a given shell is in /etc/shells */
 void checkshell(const char *shell)

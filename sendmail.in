@@ -174,6 +174,7 @@ find_script ()
 
 # Mail errors to sender by default
 MAIL_ERRORS=1
+SEND_TO_SELF=1
 FIRSTREC=""
 while PAR="$1"; shift ; do
     case $PAR in
@@ -181,19 +182,20 @@ while PAR="$1"; shift ; do
         -bm) # Read msg from stdin, default
             ;;
         -bp) # list mail-queue info,
-             # maybe implement this with in external mailer helper script?
+            exit 5
             ;;
         -bs) # Read and write raw SMTP protocol, unsupported
-            exit 1
+            exit 5
             ;;
-        -F*) # Set the full name of the sender
-            # not implemented yet
+        -F*) # Set the full name of the sender, unsupported
+            exit 5
             ;;
-        -f*) # Set the from address (if msg does not contain From: -field)
-            # not implemented yet
+        -f*) # Set the envelope from address (and From:, if there's none). 
+             # Unsopported.
+            exit 5
             ;;
         -i|-oi) # Don't terminate reading input after a line with a single dot
-            # not implemented yet
+            # not implemented yet (on by default)
             ;;
         -odb) # Deliver mail in background, ignored
             ;;

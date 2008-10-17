@@ -17,12 +17,16 @@ INET_TO=$(sed -n 's/^from\s\s*\(.*\)/\1/p' $HOME/.msmtprc)
 dotlockfile -p "$MAILDIR/lock" || exit 1
 for M in $(find $MAILDIR/new $MAILDIR/cur -type f) ; do
     RECIPIENTS=$(head -n 1 $M | sed -n "s/^$HEADER//p" | tr ',' ' ') 
-# FIXME: sed cmd below does not work for multiline To: headers
-    if tail -n +2 $M | \
-        sed -e "s/^\(To:.*\)${LOCALTO}$/\1${INET_TO}/" \
-             -e "s/^\(To:.*\)${LOCALTO}\([^@].*\)$/\1${INET_TO}\2/" \
+# FIXME: sed cmd below can make To: header line too long
+    if echo $RECIPIENTS | grep -q $INET_TO ; then
+        if tail -n +2 $M |  sed -e "s/^\(To:.*\)$/\1, ${INET_TO}/" \
         | /usr/bin/msmtp -- $RECIPIENTS ; then
-	rm -f $M
+	    rm -f $M
+        fi
+    else
+        if tail -n +2 $M | /usr/bin/msmtp -- $RECIPIENTS ; then
+            rm -f $M
+        fi
     fi
     dotlockfile -t "$MAILDIR/lock"
 done

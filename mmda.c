@@ -134,6 +134,7 @@ int mboxmail(FILE* infile, const char *mboxname, const char *cname)
         putc(c, f);
         c = getc(infile);
     }
+    fprintf(f, "\n");
     if(lockfile_remove(lockname) != 0) {
         return 1;
     }

@@ -201,11 +201,57 @@ find_script ()
 }
 
 
+# read_header $FIELD
+# return the content of a header field $FIELD from an
+# RFC 2822 format file read from stdin
+read_header ()
+{
+    local FIELD
+    FIELD=$1
+
+    sed -n "
+    /^$/ q
+    /^${FIELD}:/ {
+        h
+        :getline
+        $ b output
+        n
+        /^$/ b output
+        /^\S/ b output
+        H ; b getline
+        :output
+        x
+        s/^${FIELD}: *//
+        s/\n//g
+        p ; q
+    }"
+}
+
+
+# clean_addr $ADDR
+# Given an address read from RFC 2822 address header list (To: etc.)
+# output only the email address and not the display-name part
+clean_addr ()
+{
+    echo -n $1 | sed 's/.*<\(.*\)>.*/\1/'
+}
+
+
+# clear_bcc $FILE
+# Remove the contents of the Bcc-header in RFC 2822 format $FILE
+clear_bcc ()
+{
+    sed -i '/^$/ { :skip ; n ; b skip }
+            /^Bcc:/ { s/^Bcc:.*$/Bcc:/ ; :end ; n ; b end }' $1
+}
+
+
 [ -x $MMDA ] || exit 1
 
 # Mail errors to sender by default
 MAIL_ERRORS=1
 SEND_TO_SELF=1
+PARSE_MSG=0
 FIRSTREC=""
 while PAR="$1"; shift ; do
     case $PAR in
@@ -240,8 +286,7 @@ while PAR="$1"; shift ; do
         -om) # Mail a copy to sender if sender appears in alias expansion
             SEND_TO_SELF=1 ;;
         -t) # Parse To:, Cc: and Bcc: header from msg to obtain recipients
-            exit 1 # unsupported
-            ;;
+            PARSE_MSG=1 ;;
         --) # Start parsing recipients
             FIRSTREC="$1"
             shift
@@ -266,6 +311,16 @@ if [ "$?" != "0" ] ; then
 fi
 
 cat >> $TEMPF
+
+if [ "$PARSE_MSG" = "1" ] ; then
+    TOLIST=$(cat $TEMPF | read_header "To" | map_list "clean_addr" -)
+    CCLIST=$(cat $TEMPF | read_header "Cc" | map_list "clean_addr" -)
+    BCCLIST=$(cat $TEMPF | read_header "Bcc" | map_list "clean_addr" -)
+    RECIPIENTS=$(append "$RECIPIENTS" "$TOLIST")
+    RECIPIENTS=$(append "$RECIPIENTS" "$CCLIST")
+    RECIPIENTS=$(append "$RECIPIENTS" "$BCCLIST")
+    clear_bcc $TEMPF
+fi
 
 find_script "can-send" "CAN_SEND"
 find_script "queue-mail" "QUEUE_MAIL"

@@ -59,6 +59,35 @@ contains()
 }
 
 
+# map_list $FUNC $LIST
+# Apply $FUNC to each element of $LIST and output the result to stdout 
+# If $LIST is '-', read list from stdin
+map_list ()
+{
+    local FUNC LIST A ALIST
+    FUNC=$1
+    LIST=$2
+
+    if [ "$LIST" = "-" ] ; then
+        ALIST=$(cat)
+    else
+        ALIST="$LIST"
+    fi
+    if [ -z "$ALIST" ] ; then
+        return
+    fi
+    A=${ALIST%%,*}
+    ALIST=$(cdr "$ALIST")
+    $FUNC "$A"    
+    while [ -n "$ALIST" ] ; do
+        A=${ALIST%%,*}
+        ALIST=$(cdr "$ALIST")
+        echo -n ","
+        $FUNC "$A"    
+    done
+}
+
+
 # Other functions
 
 # Check if a given username is in /etc/passwd

@@ -10,9 +10,9 @@ MTMP="$MAILDIR/tmp"
 MNEW="$MAILDIR/new"
 HEADER="X-mmta-envelope-to:"
 
-mkdir $MTMP
-mkdir $MNEW
-mkdir "$MAILDIR/cur"
+mkdir -p $MTMP
+mkdir -p $MNEW
+mkdir -p "$MAILDIR/cur"
 
 (echo -n "$HEADER "
 echo -n "$1" ; shift

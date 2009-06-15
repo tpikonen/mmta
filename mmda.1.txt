@@ -1,0 +1,68 @@
+MMDA(1)
+=======
+
+NAME
+----
+mmda - a minimal mail delivery agent
+
+SYNOPSIS
+--------
+mmda < deliver | forward | send > <username>
+
+DESCRIPTION
+-----------
+
+mmda reads an email message from standard input and either delivers it to a
+given local user honoring the users .forward file ('deliver' and 'forward'
+subcommands) or tries to send the mailqueue of the given user using external
+programs ('send' subcommand).
+
+SUBCOMMANDS
+-----------
+deliver::
+	Delivers mail to a local user honoring the contents of users 
+	.forward file. If the message is forwarded to an external host 
+	(i.e. .forward contains a line of type user@external.org), then
+	the message is put into the mail queue of the user using the 
+	external 'queue-mail' command (or script) which is read from 
+	either local or global configuration directory. 
+	Local delivery is made to an mbox-style local mailbox 
+	to /var/mail/username. If this mailbox does not exists, it is created.
+
+forward::
+	Same as 'deliver', but an attempt at sending the mail queue of the
+	receiving user is made immediately after delivery.
+
+send::
+	An attempt at sending the mail queue of the given user is made
+	by using the 'send-queue' command obtained from the configuration.
+
+EXIT STATUS
+-----------
+0::
+	Successful execution.
+
+1::
+	Wrong number of command line arguments given.
+
+2::
+	<username> is a privileged user (uid < 1000).
+
+3::
+	<username> is invalid.
+
+4::
+	Dropping of root privileges was not successful.
+
+CONFIGURATION FILES
+-------------------
+$HOME/.config/mmta/can-send
+$HOME/.config/mmta/queue-mail
+$HOME/.config/mmta/send-queue
+/etc/mmta/can-send
+/etc/mmta/queue-mail
+/etc/mmta/send-queue
+
+SEE ALSO
+--------
+forward(5), sendmail(1), safecat(1), dotlockfile(1)

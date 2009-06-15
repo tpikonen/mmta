@@ -1,0 +1,66 @@
+SENDMAIL(1)
+===========
+
+NAME
+----
+sendmail - Minimal Mail Transfer Agent sendmail interface
+
+SYNOPSIS
+--------
+sendmail [option ...] [--] [recipients ...]
+
+DESCRIPTION
+-----------
+Minimal Mail Transfer Agent (MMTA) is an implementation of the sendmail(1)
+command intended for desktop and embedded systems and servers which only need
+tosend mail.  It can do local mail delivery using mmda(1) and send mail to
+external hosts via external programs like msmtp(1). Since MMTA does not
+function as a daemon, mail cannot be received from outside. MMTA implements
+most, but not all, command line options specified in the LSB sendmail
+specification[1]. 
+
+OPTIONS
+-------
+-bm::
+        Read mail from standard input and deliver it to recipient addresses.
+        This is the default mode of operation also without any options given.
+
+-oem or -em:: 
+        Mail errors back to sender (default).
+
+-oep or -ep::
+        Write errors to stderr.
+
+-om::
+        Mail a copy of the message to the sender if the sender appears in 
+        an alias expansion. 
+
+-t::
+        Parse the To:, Cc: and Bcc: headers in the message to obtain 
+        recipients. NB! Currently the recipient list obtained from the 
+        headers is appended to the the list of recipients obtained from 
+        the command line, unlike in the LSB spec, where the list of addresses
+        obtained from the command line is ignored when this option is given.
+
+Options -bp, -bs, -F and -f are not implemented and will result in an immediate
+exit with exit status 5. Options -i, -oi, -odb, -odf and other unknown options
+are silently ignored.
+
+
+EXIT STATUS
+-----------
+0::
+        Delivery to local address or to the mail queue of a local user was
+        successful.
+
+5::
+        Unimplemented command line option was given.
+
+SEE ALSO
+--------
+mmda(1), msmtp(1), safecat(1)
+
+RESOURCES
+---------
+[1] http://refspecs.linux-foundation.org/LSB_3.2.0/LSB-Core-generic/LSB-Core-generic/baselib-sendmail-1.html
+

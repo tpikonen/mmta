@@ -11,7 +11,7 @@ USERCONFDIR ?= ".config/mmta"
 SYSCONFDIR ?= "/etc/mmta"
 CFLAGS = -Wall -DUSERCONFDIR='$(USERCONFDIR)' -DSYSCONFDIR='$(SYSCONFDIR)'
 
-all: mmda sendmail
+all: mmda sendmail sendmail.1 mmda.1
 
 install: mmda sendmail
 	install -D --mode=a=rx,u+w sendmail $(DESTDIR)$(sbindir)/sendmail
@@ -27,5 +27,8 @@ sendmail: sendmail.in
 mmda: mmda.c
 	gcc $(CFLAGS) -o mmda mmda.c -llockfile
 
+%.1:%.1.txt
+	a2x -f manpage $<
+
 clean:
-	-rm -f mmda sendmail
+	-rm -f mmda sendmail sendmail.1 sendmail.1.xml mmda.1 mmda.1.xml

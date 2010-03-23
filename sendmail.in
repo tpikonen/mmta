@@ -162,7 +162,7 @@ resolve_aliases()
             /*) # Filename
                 AL_FILELIST=$(append "$AL_FILELIST" "$A") ;;
             \|*) # Pipe
-                AL_PIPELIST=$(append "$AL_PIPELIST" "$A" ;;
+                AL_PIPELIST=$(append "$AL_PIPELIST" "$A") ;;
             :*) # Include file
                 AL_INCLIST=$(append "$AL_INCLIST" "$A") ;;
             *@*) # Inet mailaddress

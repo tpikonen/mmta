@@ -252,10 +252,9 @@ clear_bcc ()
 MAIL_ERRORS=1
 SEND_TO_SELF=1
 PARSE_MSG=0
-FIRSTREC=""
+RECIPIENTS=""
 while [ $# -gt 0 ] ; do
     PAR=$1
-    shift
     case $PAR in
         # sendmail options defined in LSB:
         -bm) # Read msg from stdin, default
@@ -289,19 +288,17 @@ while [ $# -gt 0 ] ; do
             SEND_TO_SELF=1 ;;
         -t) # Parse To:, Cc: and Bcc: header from msg to obtain recipients
             PARSE_MSG=1 ;;
-        --) # Start parsing recipients
-            FIRSTREC="$1"
+        --) # Next arg is first recipient, break out
             shift
             break 2 ;;
         -*)
             echo "Warning: Ignoring unknown parameter $PAR" 1>&2 ;;
         *) # Already at first recipient
-            FIRSTREC=$PAR
             break 2 ;;
     esac
+    shift
 done
 
-RECIPIENTS="$FIRSTREC"
 for PAR in $@ ; do
     RECIPIENTS="$RECIPIENTS,$PAR"
 done

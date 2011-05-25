@@ -60,7 +60,7 @@ contains()
 
 
 # map_list $FUNC $LIST
-# Apply $FUNC to each element of $LIST and output the result to stdout 
+# Apply $FUNC to each element of $LIST and output the result to stdout
 # If $LIST is '-', read list from stdin
 map_list ()
 {
@@ -83,7 +83,7 @@ map_list ()
         A=${ALIST%%,*}
         ALIST=$(cdr "$ALIST")
         echo -n ","
-        $FUNC "$A"    
+        $FUNC "$A"
     done
 }
 
@@ -269,7 +269,7 @@ while [ $# -gt 0 ] ; do
         -F*) # Set the full name of the sender, unsupported
             exit 5
             ;;
-        -f*) # Set the envelope from address (and From:, if there's none). 
+        -f*) # Set the envelope from address (and From:, if there's none).
              # Unsopported.
             exit 5
             ;;
@@ -307,7 +307,7 @@ for PAR in $@ ; do
 done
 
 TEMPF=$(tempfile)
-if [ "$?" != "0" ] ; then 
+if [ "$?" != "0" ] ; then
     echo "Could not create a temporary file"
     return 1
 fi
@@ -378,7 +378,7 @@ INET_RECV=$(echo -n ${INET_RECV} | tr ',' '\n' | sort | uniq | tr '\n' ',')
 # Do internet delivery
 if [ "$SEND_INET" = "0" ] ; then
     if [ -n "$INET_RECV" ] ; then
-        QARGS=$(echo $INET_RECV | sed 's/, / /g')
+        QARGS=$(echo $INET_RECV | tr ',' ' ')
         cat $TEMPF | $QUEUE_MAIL $QARGS
         if is_online ; then
             $SEND_QUEUE

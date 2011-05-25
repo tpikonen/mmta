@@ -16,5 +16,5 @@ mkdir -p "$MAILDIR/cur"
 
 (echo -n "$HEADER "
 echo -n "$1" ; shift
-while R=$1 ; shift ; do echo -n ", ${R}" ; done ; echo
+for R in $@ ; do echo -n ", $R" ; done ; echo
 cat) | /usr/bin/safecat $MTMP $MNEW > /dev/null 2>&1

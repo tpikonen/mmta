@@ -253,7 +253,9 @@ MAIL_ERRORS=1
 SEND_TO_SELF=1
 PARSE_MSG=0
 FIRSTREC=""
-while PAR="$1"; shift ; do
+while [ $# -gt 0 ] ; do
+    PAR=$1
+    shift
     case $PAR in
         # sendmail options defined in LSB:
         -bm) # Read msg from stdin, default
@@ -300,7 +302,7 @@ while PAR="$1"; shift ; do
 done
 
 RECIPIENTS="$FIRSTREC"
-while PAR="$1"; shift ; do
+for PAR in $@ ; do
     RECIPIENTS="$RECIPIENTS,$PAR"
 done
 

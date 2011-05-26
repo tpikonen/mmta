@@ -18,6 +18,7 @@ install: mmda sendmail
 	install -D --mode=a=rx,u+ws --strip mmda $(DESTDIR)$(MMDABIN)
 	install -d $(DESTDIR)$(datarootdir)/mmta
 	install -D --mode=a=rx,u+w scripts/* $(DESTDIR)$(datarootdir)/mmta
+	install -D --mode=a=rx,u+w mmta-send-allusers $(DESTDIR)$(datarootdir)/mmta
 
 sendmail: sendmail.in
 	cat sendmail.in | sed -e 's,@@MMDABIN@@,$(MMDABIN),g' \

@@ -1,0 +1,10 @@
+#!/bin/sh
+# mmta, a minimal mail transport agent
+# Copyright: 2008 Teemu Ikonen <tpikonen@gmail.com>
+# License: GPLv3+
+
+for USER in $(find /var/mail -type d -name *.mailq | sed 's,.*/\(.*\)\.mailq,\1,')
+do
+    /usr/lib/mmta/mmda send $USER || echo "'mmda send $USER failed with exit code $?"
+done
+

@@ -1,3 +1,0 @@
-CANSEND="/home/tpikonen/mailscript/git-mailscript/msmtp/can-send"
-QUEUEMAIL="/home/tpikonen/mailscript/git-mailscript/msmtp/queue-mail"
-SENDQUEUE="/home/tpikonen/mailscript/git-mailscript/msmtp/send-queue"

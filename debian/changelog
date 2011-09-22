@@ -1,3 +1,9 @@
+mmta (0.0.2-1) UNRELEASED; urgency=low
+
+  * Increase version number for new features (tunneling etc.).
+
+ -- Teemu Ikonen <tpikonen@gmail.com>  Wed, 25 May 2011 17:08:30 +0200
+
 mmta (0.0.1-1) UNRELEASED; urgency=low
 
   * Initial package

@@ -1,9 +1,9 @@
 Source: mmta
 Section: mail
 Priority: optional
-Maintainer: Teemu Ikonen <tpikonen@gmail.com> 
+Maintainer: Teemu Ikonen <tpikonen@gmail.com>
 Build-Depends: debhelper (>=7), liblockfile-dev
-Standards-Version: 3.8.0
+Standards-Version: 3.9.4
 
 Package: mmta
 Architecture: any

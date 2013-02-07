@@ -27,22 +27,22 @@ output and should be taken care of by then higher level program, i.e. mmta.
 SUBCOMMANDS
 -----------
 deliver::
-	Delivers mail to a local user honoring the contents of users 
-	.forward file. If the message is forwarded to an external host 
+	Delivers mail to a local user honoring the contents of users
+	.forward file. If the message is forwarded to an external host
 	(i.e. .forward contains a line of type user@external.org), then
-	the message is put into the mail queue of the user using the 
-	external 'queue-mail' command (or script) which is read from 
-	either local or global configuration directory. 
-	Local delivery is made to an mbox-style local mailbox 
-	to /var/mail/username. If this mailbox does not exists, it is created.
+	the message is put into the mail queue of the user using the
+	external 'queue-mail' command (or script) which is read from
+	either local or global configuration directory.
+	Local delivery is made to an mbox-style local mailbox
+	to /var/mail/username. If this mailbox does not exist, it is created.
 
 forward::
 	Same as 'deliver', but an attempt at sending the mail queue of the
 	receiving user is made immediately after delivery.
 
 send::
-	An attempt at sending the mail queue of the given user is made
-	by using the 'send-queue' command obtained from the configuration.
+	Attempt to send the mail queue of the given user by using the
+	'send-queue' command obtained from the configuration.
 
 EXIT STATUS
 -----------

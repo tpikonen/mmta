@@ -33,4 +33,4 @@ mmda: mmda.c
 		|| printf "***\n*** Asciidoc /usr/bin/a2x not found\n***\n" ;\
 
 clean:
-	-rm -f mmda sendmail sendmail.1 sendmail.1.xml mmda.1 mmda.1.xml
+	-rm -f mmda sendmail

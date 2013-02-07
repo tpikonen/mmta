@@ -9,7 +9,7 @@ man1dir ?= $(datarootdir)/man/man1
 MMDABIN ?= $(libexecdir)/mmta/mmda
 USERCONFDIR ?= ".config/mmta"
 SYSCONFDIR ?= "/etc/mmta"
-CFLAGS = -Wall -DUSERCONFDIR='$(USERCONFDIR)' -DSYSCONFDIR='$(SYSCONFDIR)'
+CFLAGS += -Wall -DUSERCONFDIR='$(USERCONFDIR)' -DSYSCONFDIR='$(SYSCONFDIR)'
 
 all: mmda sendmail sendmail.1 mmda.1
 
@@ -26,7 +26,7 @@ sendmail: sendmail.in
 	-e 's,@@SYSCONFDIR@@,$(SYSCONFDIR),g' > sendmail
 
 mmda: mmda.c
-	gcc $(CFLAGS) -o mmda mmda.c -llockfile
+	gcc -o mmda mmda.c -llockfile $(CPPFLAGS) $(CFLAGS) $(LDFLAGS)
 
 %.1:%.1.txt
 	[ -x /usr/bin/a2x ] && a2x -f manpage $< \

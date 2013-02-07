@@ -44,22 +44,13 @@ void execprog(char * const argv[], const char *homedir)
     char *newenv[3];
     char *path = "PATH=/bin:/usr/bin";
     char home[SLEN];
-    int i;
 
     snprintf(home, SLEN, "HOME=%s", homedir);
     newenv[0] = path;
     newenv[1] = home;
     newenv[2] = NULL;
 
-    i = 0;
-/*
-    while(argv[i] != NULL) {
-        printf("argv%d: %s\n", i, argv[i]);
-        i++;
-    }
-*/
     execve(argv[0], argv, newenv);
-//    printf("error: returning from exec\n");
     exit(1);
 }
 
@@ -283,7 +274,6 @@ int main(int argc, char *argv[])
     struct passwd *userinfo;
     struct passwd *callerinfo;
     uid_t uid, cuid;
-    gid_t gid;
     char *uname, *cmd;
     char cname[SLEN];
     char shell[SLEN];
@@ -312,7 +302,6 @@ int main(int argc, char *argv[])
 #endif
         exit(2);
     }
-    gid = userinfo->pw_gid;
     strncpy(shell, userinfo->pw_shell, SLEN-1);
     shell[SLEN-1] = '\0';
     strncpy(homedir, userinfo->pw_dir, SLEN-1);

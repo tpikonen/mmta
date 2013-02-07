@@ -29,7 +29,8 @@ mmda: mmda.c
 	gcc $(CFLAGS) -o mmda mmda.c -llockfile
 
 %.1:%.1.txt
-	a2x -f manpage $<
+	[ -x /usr/bin/a2x ] && a2x -f manpage $< \
+		|| printf "***\n*** Asciidoc /usr/bin/a2x not found\n***\n" ;\
 
 clean:
 	-rm -f mmda sendmail sendmail.1 sendmail.1.xml mmda.1 mmda.1.xml

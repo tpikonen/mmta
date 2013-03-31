@@ -1,6 +1,6 @@
 #!/bin/sh
 # mmta, a minimal mail transport agent
-# Copyright: 2008 Teemu Ikonen <tpikonen@gmail.com>
+# Copyright: 2008-2013 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
 for USER in $(find /var/mail -type d -name *.mailq | sed 's,.*/\(.*\)\.mailq,\1,')

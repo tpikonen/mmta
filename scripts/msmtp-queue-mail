@@ -1,6 +1,6 @@
 #!/bin/sh
 # Script to add a message to mail queue
-# Copyright: 2008 Teemu Ikonen <tpikonen@gmail.com>
+# Copyright: 2008-2013 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
 [ -x /usr/bin/msmtp ] || exit 1

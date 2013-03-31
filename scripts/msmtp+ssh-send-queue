@@ -1,6 +1,6 @@
 #!/bin/sh
 # Script to send messages from a mailqueue via msmtp through ssh tunnel
-# Copyright: 2011 Teemu Ikonen <tpikonen@gmail.com>
+# Copyright: 2011-2013 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
 [ -x /usr/bin/msmtp ] || exit 1

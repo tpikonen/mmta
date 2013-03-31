@@ -1,6 +1,6 @@
 /* 
  * mmda, a minimal mail delivery agent
- * Copyright: 2008 Teemu Ikonen <tpikonen@gmail.com>
+ * Copyright: 2008-2013 Teemu Ikonen <tpikonen@gmail.com>
  * License: GPLv2+
  */
 

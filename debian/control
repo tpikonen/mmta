@@ -8,8 +8,8 @@ Standards-Version: 3.9.4
 Package: mmta
 Architecture: any
 Section: mail
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Recommends: msmtp, safecat
+Depends: safecat, ${shlibs:Depends}, ${misc:Depends}
+Recommends: msmtp
 Replaces: mail-transport-agent
 Provides: mail-transport-agent
 Description: Minimalistic mail transport agent for desktop systems

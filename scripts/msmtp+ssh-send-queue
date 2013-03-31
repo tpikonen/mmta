@@ -3,10 +3,19 @@
 # Copyright: 2011-2013 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
-[ -x /usr/bin/msmtp ] || exit 1
+scriptname=$0
+
+die () {
+    logger -t mmta $scriptname: $2
+    exit $1
+}
 
 MAILDIR="/var/mail/$(whoami).mailq"
 HEADER="X-mmta-envelope-to:"
+
+[ -x /usr/bin/msmtp ] || die 1 "/usr/bin/msmtp does not exist."
+[ -r $HOME/.msmtprc ] || die 1 "$HOME/.msmtprc is not readable."
+[ -d $MAILDIR ] || die 1 "Mail queue $MAILDIR does not exist."
 
 ssh -N -i $HOME/.ssh/id_rsa user@forward.com -L 11587:smtp.gmail.com:587 > /dev/null &
 SSH_PID=$!

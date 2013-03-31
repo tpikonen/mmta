@@ -3,9 +3,16 @@
 # Copyright: 2008-2013 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
-[ -x /usr/bin/msmtp ] || exit 1
+scriptname=$0
+
+die () {
+    logger -t mmta $scriptname: $2
+    exit $1
+}
+
 MAILDIR="/var/mail/$(whoami).mailq"
-[ -d "$MAILDIR" ] || exit 1
+[ -d $MAILDIR ] || die 1 "Mail queue $MAILDIR does not exist."
+
 MTMP="$MAILDIR/tmp"
 MNEW="$MAILDIR/new"
 HEADER="X-mmta-envelope-to:"

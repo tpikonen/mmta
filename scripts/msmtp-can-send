@@ -3,8 +3,16 @@
 # Copyright: 2008-2013 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
-MAILDIR="/var/mail/$(whoami).mailq"
+scriptname=$0
 
-[ -d "$MAILDIR" ] || exit 1
-[ -x /usr/bin/msmtp ] || exit 1
+die () {
+    logger -t mmta $scriptname: $2
+    exit $1
+}
+
+MAILDIR="/var/mail/$(whoami).mailq"
+[ -x /usr/bin/msmtp ] || die 1 "/usr/bin/msmtp does not exist."
+[ -r $HOME/.msmtprc ] || die 1 "$HOME/.msmtprc is not readable."
+[ -d $MAILDIR ] || die 1 "Mail queue $MAILDIR does not exist."
+
 /usr/bin/msmtp -P > /dev/null 2>&1

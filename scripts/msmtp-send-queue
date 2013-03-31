@@ -3,15 +3,24 @@
 # Copyright: 2008-2013 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
-[ -x /usr/bin/msmtp ] || exit 1
+scriptname=$0
+
+die () {
+    logger -t mmta $scriptname: $2
+    exit $1
+}
 
 MAILDIR="/var/mail/$(whoami).mailq"
 HEADER="X-mmta-envelope-to:"
 
-HOST=$(sed -n 's/^host\s\s*\(.*\)/\1/p' $HOME/.msmtprc)
-ping -c 1 -w 2 $HOST > /dev/null 2>&1 || exit 0
+[ -x /usr/bin/msmtp ] || die 1 "/usr/bin/msmtp does not exist."
+[ -r $HOME/.msmtprc ] || die 1 "$HOME/.msmtprc is not readable."
+[ -d $MAILDIR ] || die 1 "Mail queue $MAILDIR does not exist."
 
-dotlockfile -p "$MAILDIR/lock" || exit 1
+HOST=$(sed -n 's/^host\s\s*\(.*\)/\1/p' $HOME/.msmtprc)
+ping -c 1 -w 2 $HOST > /dev/null 2>&1 || die 0 "Could not reach mailhost $HOST"
+
+dotlockfile -p "$MAILDIR/lock" || die 1 "Could not lock maildir $MAILDIR"
 for M in $(find $MAILDIR/new $MAILDIR/cur -type f) ; do
     RECIPIENTS=$(head -n 1 $M | sed -n "s/^$HEADER//p" | tr ',' ' ') 
     if tail -n +2 $M | /usr/bin/msmtp -- $RECIPIENTS ; then

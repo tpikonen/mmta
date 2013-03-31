@@ -108,7 +108,7 @@ get_aliases()
 {
     local UNAME
     UNAME=$1
-    grep -v '^#' $ALIASFILE | sed -n "
+    [ -r $ALIASFILE ] && grep -v '^#' $ALIASFILE | sed -n "
 /^$UNAME:/ {
     s/\\\\$// ; h ; t sawslash
     :loop

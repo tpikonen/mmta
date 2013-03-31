@@ -21,7 +21,7 @@ HOST=$(sed -n 's/^host\s\s*\(.*\)/\1/p' $HOME/.msmtprc)
 ping -c 1 -w 2 $HOST > /dev/null 2>&1 || die 0 "Could not reach mailhost $HOST"
 
 dotlockfile -p "$MAILDIR/lock" || die 1 "Could not lock maildir $MAILDIR"
-for M in $(find $MAILDIR/new $MAILDIR/cur -type f) ; do
+for M in $(find $MAILDIR/new $MAILDIR/cur -type f 2> /dev/null) ; do
     RECIPIENTS=$(head -n 1 $M | sed -n "s/^$HEADER//p" | tr ',' ' ') 
     if tail -n +2 $M | /usr/bin/msmtp -- $RECIPIENTS ; then
 	rm -f $M

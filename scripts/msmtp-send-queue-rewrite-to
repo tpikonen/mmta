@@ -24,7 +24,7 @@ LOCALTO=$(whoami)
 INET_TO=$(sed -n 's/^from\s\s*\(.*\)/\1/p' $HOME/.msmtprc)
 
 dotlockfile -p "$MAILDIR/lock" || exit 1
-for M in $(find $MAILDIR/new $MAILDIR/cur -type f) ; do
+for M in $(find $MAILDIR/new $MAILDIR/cur -type f 2> /dev/null) ; do
     RECIPIENTS=$(head -n 1 $M | sed -n "s/^$HEADER//p" | tr ',' ' ') 
 # FIXME: sed cmd below can make To: header line too long
     if echo $RECIPIENTS | grep -q $INET_TO ; then

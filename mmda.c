@@ -25,18 +25,19 @@
 /* #define USERCONFDIR ".config/mmta" */
 /* #define SYSCONFDIR "/etc/mmta" */
 
-/* Check if a given shell is in /etc/shells */
-void checkshell(const char *shell)
+/* Check if a given shell is in /etc/shells
+ * Return 1 if it is, 0 if not */
+int checkshell(const char *shell)
 {
     char *p;
 
     while((p = getusershell()) != NULL) {
         if(!strcmp(p, shell)) {
             endusershell();
-            return;
+            return 1;
         }
     }
-    exit(1);
+    return 0;
 }
 
 
@@ -313,7 +314,9 @@ int main(int argc, char *argv[])
     strncpy(homedir, userinfo->pw_dir, SLEN-1);
     homedir[SLEN-1] = '\0';
     /* Check if user is ok to receive mail */
-    checkshell(shell);
+    if(!checkshell(shell)) {
+        exit(1);
+    }
 
     cuid = getuid();
     callerinfo = getpwuid(cuid);

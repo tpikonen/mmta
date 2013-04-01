@@ -102,7 +102,7 @@ void touchmbox(const char *uname, int uid)
     if(ss.st_uid != uid || ss.st_gid != MAIL_GID || !S_ISREG(ss.st_mode)
             || (ss.st_mode & 0777) != 0660 )
     {
-        perror("Wrong permissions on mailbox");
+        fprintf(stderr, "Permissions not 0660 on mailbox %s", mboxname);
         exit(1);
     }
 }

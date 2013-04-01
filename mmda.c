@@ -199,7 +199,6 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
         if(fgets(buf, SLEN, fwd) == NULL) {
             break;
         }
-//        printf("buf: |%s|\n", buf);
         /* Ignore comment lines */
         if(buf[0] == '#') {
             continue;
@@ -221,7 +220,6 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
             buf[end-buf-1] = '\0';
         }
         eat_wspace(buf);
-//        printf("unquoted: ***%s***\n", buf);
         if(buf[0] == '\\') {
             strncpy(buf, buf+1, SLEN);
         }

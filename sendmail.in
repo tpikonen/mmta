@@ -264,7 +264,7 @@ clear_bcc ()
 }
 
 
-[ -x $MMDA ] || exit 1
+[ -x $MMDA ] || die 1 "Mail delivery program $MMDA not executable."
 
 # Mail errors to sender by default
 MAIL_ERRORS=1
@@ -278,17 +278,17 @@ while [ $# -gt 0 ] ; do
         -bm) # Read msg from stdin, default
             ;;
         -bp) # list mail-queue info,
-            exit 5
+            die 5 "Got option '-bp', mail queue listing is not supported."
             ;;
         -bs) # Read and write raw SMTP protocol, unsupported
-            exit 5
+            die 5 "Got option '-bs', direct SMTP protocol is not supported."
             ;;
         -F*) # Set the full name of the sender, unsupported
-            exit 5
+            die 5 "Got option '-F', setting full name is not supported."
             ;;
         -f*) # Set the envelope from address (and From:, if there's none).
              # Unsopported.
-            exit 5
+            die 5 "Got option '-f', setting envelope from is not supported."
             ;;
         -i|-oi) # Don't terminate reading input after a line with a single dot
             # not implemented yet (on by default)

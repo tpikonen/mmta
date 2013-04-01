@@ -1,4 +1,4 @@
-/* 
+/*
  * mmda, a minimal mail delivery agent
  * Copyright: 2008-2013 Teemu Ikonen <tpikonen@gmail.com>
  * License: GPLv2+
@@ -120,7 +120,7 @@ int mboxmail(FILE* infile, const char *mboxname, const char *cname)
     f = fopen(mboxname, "a");
     if(f == NULL) {
         /* Could not create mbox? */
-        lockfile_remove(lockname); 
+        lockfile_remove(lockname);
         return 3;
     }
     time(&t);
@@ -174,7 +174,7 @@ void eat_wspace(char *buf)
 }
 
 
-void runforward(const char *fwdname, FILE *mfile, const char *uname, 
+void runforward(const char *fwdname, FILE *mfile, const char *uname,
                 const char *homedir, char *cname, int send)
 {
     FILE *fwd;
@@ -325,7 +325,7 @@ int main(int argc, char *argv[])
     if(setuid(uid) != 0) {
         exit(4);
     }
-    
+
     if(!strncmp(cmd, "deliver", 7) || !strncmp(cmd, "forward", 7)) {
         int send, status, c;
         FILE *mfile;
@@ -339,7 +339,7 @@ int main(int argc, char *argv[])
             char mboxname[SLEN];
 
             snprintf(mboxname, SLEN, "%s/%s", MAILDIR, uname);
-            return mboxmail(stdin, mboxname, cname);    
+            return mboxmail(stdin, mboxname, cname);
         }
         send = 0;
         if(!strncmp(cmd, "forward", 7)) {

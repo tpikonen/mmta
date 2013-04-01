@@ -22,6 +22,7 @@
 /* The GID for group mail is always 8 at least in Debian */
 #define MAIL_GID (8)
 
+/* confdirs are defined in Makefile now */
 /* #define USERCONFDIR ".config/mmta" */
 /* #define SYSCONFDIR "/etc/mmta" */
 

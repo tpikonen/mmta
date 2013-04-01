@@ -60,8 +60,8 @@ int runprog(char * const argv[], FILE *input, const char *homedir)
     int status;
     pid_t cpid;
 
-    cpid = fork();
-    if(cpid < 0) {
+    if((cpid = fork()) < 0) {
+        perror("fork failed");
         exit(123);
     }
     if(cpid == 0) {
@@ -82,12 +82,16 @@ void touchmbox(const char *uname, int uid)
 
     snprintf(mboxname, SLEN-1, "%s/%s", MAILDIR, uname);
     if(stat(mboxname, &ss) < 0) {
-        int fd;
+        int fd, ret;
         /* touch file */
         if((fd = creat(mboxname, 0660)) < 0) {
+            perror("Could not create mailbox");
             exit(1);
         }
-        fchown(fd, uid, MAIL_GID);
+        if((ret = fchown(fd, uid, MAIL_GID)) < 0) {
+            perror("Could not fchown mailbox");
+            exit(1);
+        }
         close(fd);
         stat(mboxname, &ss);
     }
@@ -95,6 +99,7 @@ void touchmbox(const char *uname, int uid)
     if(ss.st_uid != uid || ss.st_gid != MAIL_GID || !S_ISREG(ss.st_mode)
             || (ss.st_mode & 0777) != 0660 )
     {
+        perror("Wrong permissions on mailbox");
         exit(1);
     }
 }

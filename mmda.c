@@ -19,6 +19,7 @@
 #define SLEN 1024
 #define DENY_ROOT 1
 #define MAILDIR "/var/mail"
+/* The GID for group mail is always 8 at least in Debian */
 #define MAIL_GID (8)
 
 /* #define USERCONFDIR ".config/mmta" */

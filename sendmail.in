@@ -16,15 +16,15 @@ ALIASFILE="/etc/aliases"
 # Print and log a string
 complain ()
 {
-    logger -t mmta $1
-    echo $1 >&2
+    logger -t mmta "$1"
+    echo "$1" >&2
 }
 
 
 # die $EXITCODE $MESSAGE
 # Print and log a message and exit
 die () {
-    complain $2
+    complain "$2"
     complain "Exiting with code $1"
     exit $1
 }

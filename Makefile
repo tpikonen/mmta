@@ -1,4 +1,4 @@
-prefix ?= /usr/local
+prefix ?= /usr
 exec_prefix ?= $(prefix)
 datarootdir ?= $(prefix)/share
 bindir ?= $(exec_prefix)/bin

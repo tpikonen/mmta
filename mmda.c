@@ -190,6 +190,7 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
 
     fwd = fopen(fwdname, "r");
     if(fwd == NULL) {
+        fprintf(stderr, "mmda: Forward file %s disappeared?\n", fwdname);
         exit(1);
     }
 
@@ -242,12 +243,12 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
         } else if(strchr(buf, '@')) {
             if(send) {
                 sargv[sargc] = (char *) malloc(strlen(buf)+1);
-                if(sargv[sargc] != NULL) {
-                    strcpy(sargv[sargc], buf);
-                    sargc++;
-                } else {
+                if(sargv[sargc] == NULL) {
+                    fprintf(stderr, "mmda: malloc failed.");
                     exit(1);
                 }
+                strcpy(sargv[sargc], buf);
+                sargc++;
             } else {
                 printf("%s\n", buf);
             }
@@ -287,6 +288,7 @@ int main(int argc, char *argv[])
     char fwdname[SLEN];
 
     if(argc < 3) {
+        fprintf(stderr, "mmda: Not enough arguments.");
         exit(1);
     }
     cmd = argv[1];
@@ -314,6 +316,8 @@ int main(int argc, char *argv[])
     homedir[SLEN-1] = '\0';
     /* Check if user is ok to receive mail */
     if(!checkshell(shell)) {
+        fprintf(stderr, "mmda: Receiver %s not allowed to log in, exiting.", \
+            uname);
         exit(1);
     }
 
@@ -361,7 +365,8 @@ int main(int argc, char *argv[])
         }
         mfile = tmpfile();
         if(mfile == NULL) {
-            return 1;
+            fprintf(stderr, "mmda: Could not open temporary file.\n");
+            exit(1);
         }
         c = getc(stdin);
         while(!feof(stdin)) {
@@ -370,7 +375,8 @@ int main(int argc, char *argv[])
         }
         if(ferror(mfile)) {
             /* some error */
-            return 1;
+            fprintf(stderr, "mmda: Error copying to temporary file.\n");
+            exit(1);
         }
         runforward(fwdname, mfile, uname, homedir, cname, send);
     } else if(!strncmp(cmd, "send", 5)) {
@@ -383,13 +389,13 @@ int main(int argc, char *argv[])
             sargv[1] = NULL;
             status = runprog(sargv, stdin, homedir);
             if(WIFEXITED(status)) {
-                return WEXITSTATUS(status);
+                exit(WEXITSTATUS(status));
             }
         }
-        return 55;
+        exit(55);
     } else {
         printf("Unknown command\n");
     }
 
-    return 66;
+    exit(66);
 }

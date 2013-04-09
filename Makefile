@@ -24,6 +24,7 @@ sendmail: sendmail.in
 	cat sendmail.in | sed -e 's,@@MMDABIN@@,$(MMDABIN),g' \
 	-e 's,@@USERCONFDIR@@,$(USERCONFDIR),g' \
 	-e 's,@@SYSCONFDIR@@,$(SYSCONFDIR),g' > sendmail
+	chmod a+x sendmail
 
 mmda: mmda.c
 	gcc -o mmda mmda.c -llockfile $(CPPFLAGS) $(CFLAGS) $(LDFLAGS)

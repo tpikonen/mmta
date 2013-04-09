@@ -330,6 +330,7 @@ int main(int argc, char *argv[])
     touchmbox(uname, uid);
     /* Drop privs */
     if(setuid(uid) != 0) {
+        perror("setuid failed");
         exit(4);
     }
 

@@ -1,3 +1,7 @@
 #!/usr/bin/make -f
+
+override_dh_fixperms:
+	dh_fixperms -X/usr/lib/mmta/mmda
+
 %:
 	prefix="/usr" dh $@

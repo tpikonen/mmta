@@ -377,7 +377,13 @@ while [ -n "$ALIST" ]; do
     if contains "$LOCAL_SENT" "$R" ; then
         continue
     fi
-    FLIST=$(cat $TEMPF | $MMDA $MARG $R | sed -n '1h;1!H;${;g;s/\n/,/g;p;}')
+    FLIST=$(cat $TEMPF | $MMDA $MARG $R)
+    ECODE=$?
+    if [ $ECODE != "0" ] ; then
+        complain "Local delivery from $(whoami) to $R failed"
+        complain "'$MMDA $MARG $R' exit code $ECODE"
+    fi
+    FLIST=$(echo $FLIST | sed -n '1h;1!H;${;g;s/\n/,/g;p;}')
     ALIST=$(append "$FLIST" "$ALIST")
     LOCAL_SENT=$(append "$LOCAL_SENT" "$R")
     if [ "$SEND_INET" != "0" ] ; then

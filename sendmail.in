@@ -284,11 +284,11 @@ while [ $# -gt 0 ] ; do
             die 5 "Got option '-bs', direct SMTP protocol is not supported."
             ;;
         -F*) # Set the full name of the sender, unsupported
-            die 5 "Got option '-F', setting full name is not supported."
+            complain "Option '-F' (set full name) not supported, continuing."
             ;;
         -f*) # Set the envelope from address (and From:, if there's none).
              # Unsopported.
-            die 5 "Got option '-f', setting envelope from is not supported."
+            complain "Option '-f' (set envelope from) not supported, continuing"
             ;;
         -i|-oi) # Don't terminate reading input after a line with a single dot
             # not implemented yet (on by default)

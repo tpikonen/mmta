@@ -99,10 +99,9 @@ void touchmbox(const char *uname, int uid)
         stat(mboxname, &ss);
     }
     /* Check that the file is owned by the user and has correct perms */
-    if(ss.st_uid != uid || ss.st_gid != MAIL_GID || !S_ISREG(ss.st_mode)
-            || (ss.st_mode & 0777) != 0660 )
+    if(ss.st_uid != uid || !S_ISREG(ss.st_mode) || (ss.st_mode & 0707) != 0600 )
     {
-        fprintf(stderr, "Permissions not 0660 on mailbox %s", mboxname);
+        fprintf(stderr, "Unacceptable owner or mode on mailbox %s", mboxname);
         exit(1);
     }
 }

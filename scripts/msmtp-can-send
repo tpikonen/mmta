@@ -12,7 +12,7 @@ die () {
 
 MAILDIR="/var/mail/$(whoami).mailq"
 [ -x /usr/bin/msmtp ] || die 1 "/usr/bin/msmtp does not exist."
-[ -r $HOME/.msmtprc ] || exit 1
-[ -d $MAILDIR ] || exit 1
+[ -r $HOME/.msmtprc ] || die 1 "$HOME/.msmtprc is not readable."
+[ -d $MAILDIR ] || die 1 "Maildir $MAILDIR does not exist."
 
 /usr/bin/msmtp -P > /dev/null 2>&1

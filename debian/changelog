@@ -1,3 +1,9 @@
+mmta (0.0.4-1) UNRELEASED; urgency=low
+
+  * Improvements, see git log for details.
+
+ -- Teemu Ikonen <tpikonen@gmail.com>  Wed, 08 Mar 2017 16:05:38 +0200
+
 mmta (0.0.3-1) UNRELEASED; urgency=low
 
   * Improve error reporting and add logging.

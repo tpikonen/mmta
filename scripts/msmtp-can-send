@@ -15,4 +15,4 @@ MAILDIR="/var/mail/$(whoami).mailq"
 [ -r $HOME/.msmtprc ] || die 1 "$HOME/.msmtprc is not readable."
 [ -d $MAILDIR ] || die 1 "Maildir $MAILDIR does not exist."
 
-/usr/bin/msmtp -P > /dev/null 2>&1
+echo "" | /usr/bin/msmtp -P 2>&1 > /dev/null

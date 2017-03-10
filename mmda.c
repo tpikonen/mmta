@@ -171,7 +171,7 @@ void eat_wspace(char *buf)
     while(buf[i] == ' ' || buf[i] == '\t')
         i++;
     if(i > 0) {
-        strncpy(buf, buf+i, SLEN);
+        memmove(buf, buf+i, SLEN-i);
     }
 }
 
@@ -216,12 +216,12 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
             if(end <= buf) {
                 exit(0);
             }
-            strncpy(buf, buf+1, end-buf-1);
+            memmove(buf, buf+1, end-buf-1);
             buf[end-buf-1] = '\0';
         }
         eat_wspace(buf);
         if(buf[0] == '\\') {
-            strncpy(buf, buf+1, SLEN);
+            memmove(buf, buf+1, SLEN-1);
         }
         if(buf[0] == '|') {
             char *argv[SLEN];

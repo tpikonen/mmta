@@ -116,7 +116,8 @@ int mboxmail(FILE* infile, const char *mboxname, const char *cname)
     time_t t;
 
     locksz = snprintf(lockname, SLEN-1, "%s.lock", mboxname);
-    if((locksz != strlen(mboxname)+5) || lockfile_create(lockname, 4, 0) != 0) {
+    if((locksz != strnlen(mboxname, SLEN)+5) \
+        || lockfile_create(lockname, 4, 0) != 0) {
         return 13;
     }
     f = fopen(mboxname, "a");
@@ -199,14 +200,14 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
         if(fgets(buf, SLEN, fwd) == NULL) {
             break;
         }
+        blen = strnlen(buf, SLEN);
+        if(buf[blen-1] == '\n') {
+            buf[blen-1] = '\0';
+        }
         eat_wspace(buf);
         /* Ignore comment lines */
         if(buf[0] == '#') {
             continue;
-        }
-        blen = strlen(buf);
-        if(buf[blen-1] == '\n') {
-            buf[blen-1] = '\0';
         }
         /* Simple unquoting */
         if(buf[0] == '"' || buf[0] == '\'') {
@@ -241,7 +242,7 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
             mboxmail(mfile, buf, cname);
         } else if(strchr(buf, '@')) {
             if(send) {
-                sargv[sargc] = (char *) malloc(strlen(buf)+1);
+                sargv[sargc] = (char *) malloc(strnlen(buf, SLEN)+1);
                 if(sargv[sargc] == NULL) {
                     fprintf(stderr, "mmda: malloc failed.");
                     exit(1);

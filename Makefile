@@ -10,6 +10,7 @@ MMDABIN ?= $(libexecdir)/mmta/mmda
 USERCONFDIR ?= ".config/mmta"
 SYSCONFDIR ?= "/etc/mmta"
 CFLAGS += -Wall -DUSERCONFDIR='$(USERCONFDIR)' -DSYSCONFDIR='$(SYSCONFDIR)'
+CFLAGS += -DDEBUG=0
 
 all: mmda sendmail sendmail.1 mmda.1
 

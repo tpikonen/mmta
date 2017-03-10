@@ -16,6 +16,10 @@
 #include <lockfile.h>
 #include <time.h>
 
+#define debug_print(FORMAT, ...) \
+    do { if (DEBUG) fprintf(stderr, "%s() in %s:%i: " FORMAT "\n", \
+        __func__, __FILE__, __LINE__, ##__VA_ARGS__); } while (0)
+
 #define SLEN 1024
 #define DENY_ROOT 1
 #define MAILDIR "/var/mail"
@@ -204,9 +208,11 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
         if(buf[blen-1] == '\n') {
             buf[blen-1] = '\0';
         }
+        debug_print("The .forward line: |%s|", buf);
         eat_wspace(buf);
         /* Ignore comment lines */
         if(buf[0] == '#') {
+            debug_print("   is a comment.");
             continue;
         }
         /* Simple unquoting */
@@ -219,10 +225,12 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
             }
             memmove(buf, buf+1, end-buf-1);
             buf[end-buf-1] = '\0';
+            debug_print("   after unquoting: |%s|", buf);
         }
         eat_wspace(buf);
         if(buf[0] == '\\') {
             memmove(buf, buf+1, SLEN-1);
+            debug_print("   after backslash removal: |%s|", buf);
         }
         if(buf[0] == '|') {
             char *argv[SLEN];
@@ -237,10 +245,13 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
                 tok = strtok(NULL, " \n");
                 argv[i] = tok;
             }
+            debug_print("   is pipe to |%s|", argv[0]);
             runprog(argv, mfile, homedir);
         } else if(buf[0] == '/') {
             mboxmail(mfile, buf, cname);
+            debug_print("   is extra mbox file |%s|", buf);
         } else if(strchr(buf, '@')) {
+            debug_print("   is external address:|%s|", buf);
             if(send) {
                 sargv[sargc] = (char *) malloc(strnlen(buf, SLEN)+1);
                 if(sargv[sargc] == NULL) {
@@ -257,7 +268,9 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
 
                 snprintf(mboxname, SLEN, "%s/%s", MAILDIR, uname);
                 mboxmail(mfile, mboxname, cname); // FIXME: check retval
+                debug_print("   is own mailbox of user %s", uname);
         } else {
+            debug_print("   is local address:|%s|", buf);
             printf("%s\n", buf);
         }
     }

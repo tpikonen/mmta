@@ -199,6 +199,7 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
         if(fgets(buf, SLEN, fwd) == NULL) {
             break;
         }
+        eat_wspace(buf);
         /* Ignore comment lines */
         if(buf[0] == '#') {
             continue;
@@ -207,7 +208,6 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
         if(buf[blen-1] == '\n') {
             buf[blen-1] = '\0';
         }
-        eat_wspace(buf);
         /* Simple unquoting */
         if(buf[0] == '"' || buf[0] == '\'') {
             char *end;

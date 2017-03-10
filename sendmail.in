@@ -4,6 +4,7 @@
 # License: GPLv3+
 
 MMDA=@@MMDABIN@@
+MMTASQ=@@MMTASQBIN@@
 USERCONFEND=@@USERCONFDIR@@
 USERCONFDIR="$HOME/$USERCONFEND"
 SYSCONFDIR=@@SYSCONFDIR@@
@@ -412,8 +413,8 @@ else
         ( while [ -n "$ALIST" ] ; do
             A=${ALIST%%,*}
             ALIST=$(cdr "$ALIST")
-            $MMDA send $A
-        done ) &
+            $MMTASQ $A
+        done ) & # FIXME: disown?
     fi
 fi
 

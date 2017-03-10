@@ -7,7 +7,7 @@ mmda - a minimal mail delivery agent
 
 SYNOPSIS
 --------
-mmda < deliver | forward | send > <username>
+mmda [deliver | forward] <username>
 
 DESCRIPTION
 -----------
@@ -16,11 +16,8 @@ mmda is a local delivery helper program for the mmta mail transfer agent.
 It needs to store messages to the mailboxes and maildirs of the receiving
 user and thus should be installed setuid root.
 
-mmda reads an email message from standard input and either delivers it to a
-given local user honoring the users .forward file ('deliver' and 'forward'
-subcommands) or tries to send the mailqueue of the given user using external
-programs ('send' subcommand).
-
+mmda reads an email message from standard input and delivers it to a
+given local user honoring the users .forward file.
 The addresses to which messages could not be delivered are printed to standard
 output and should be taken care of by then higher level program, i.e. mmta.
 
@@ -39,10 +36,6 @@ deliver::
 forward::
 	Same as 'deliver', but an attempt at sending the mail queue of the
 	receiving user is made immediately after delivery.
-
-send::
-	Attempt to send the mail queue of the given user by using the
-	'send-queue' command obtained from the configuration.
 
 EXIT STATUS
 -----------

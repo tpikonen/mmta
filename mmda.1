@@ -1,13 +1,13 @@
 '\" t
 .\"     Title: mmda
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
-.\"      Date: 02/07/2013
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 03/10/2017
 .\"    Manual: \ \&
 .\"    Source: \ \&
 .\"  Language: English
 .\"
-.TH "MMDA" "1" "02/07/2013" "\ \&" "\ \&"
+.TH "MMDA" "1" "03/10/2017" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -31,14 +31,12 @@
 mmda \- a minimal mail delivery agent
 .SH "SYNOPSIS"
 .sp
-mmda < deliver | forward | send > <username>
+mmda [deliver | forward] <username>
 .SH "DESCRIPTION"
 .sp
 mmda is a local delivery helper program for the mmta mail transfer agent\&. It needs to store messages to the mailboxes and maildirs of the receiving user and thus should be installed setuid root\&.
 .sp
-mmda reads an email message from standard input and either delivers it to a given local user honoring the users \&.forward file (\fIdeliver\fR and \fIforward\fR subcommands) or tries to send the mailqueue of the given user using external programs (\fIsend\fR subcommand)\&.
-.sp
-The addresses to which messages could not be delivered are printed to standard output and should be taken care of by then higher level program, i\&.e\&. mmta\&.
+mmda reads an email message from standard input and delivers it to a given local user honoring the users \&.forward file\&. The addresses to which messages could not be delivered are printed to standard output and should be taken care of by then higher level program, i\&.e\&. mmta\&.
 .SH "SUBCOMMANDS"
 .PP
 deliver
@@ -53,13 +51,6 @@ forward
 .RS 4
 Same as
 \fIdeliver\fR, but an attempt at sending the mail queue of the receiving user is made immediately after delivery\&.
-.RE
-.PP
-send
-.RS 4
-Attempt to send the mail queue of the given user by using the
-\fIsend\-queue\fR
-command obtained from the configuration\&.
 .RE
 .SH "EXIT STATUS"
 .PP

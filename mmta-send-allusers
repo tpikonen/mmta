@@ -13,6 +13,7 @@ complain ()
 
 for USER in $(find /var/mail -type d -name *.mailq | sed 's,.*/\(.*\)\.mailq,\1,')
 do
-    /usr/lib/mmta/mmda send $USER || complain "$0: 'mmda send $USER' failed with exit code $?"
+    /usr/lib/mmta/mmta-send-queue $USER \
+        || complain "$0: 'mmta-send-queue $USER' failed with exit code $?"
 done
 

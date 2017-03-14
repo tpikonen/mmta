@@ -160,14 +160,16 @@ get_aliases()
 # If user does not have aliases, returns $USER
 resolve_aliases()
 {
-    local USER PROCESSED A ALIST
+    local USER PROCESSED A ALIST LIST
     USER=$1
     PROCESSED=$1
     AL_LOCLIST=""
     AL_INETLIST=""
     AL_PIPELIST=""
     AL_FILELIST=""
+    AL_MDIRLIST=""
     AL_INCLIST=""
+    AL_ERRLIST=""
 
     ALIST=$(get_aliases $USER)
     A=""
@@ -178,13 +180,19 @@ resolve_aliases()
             complain "Warning: aliases file has a loop with user $A"
             continue
         fi
+        # FIXME: Some alias targets (like error messages) can contain commas.
         case "$A" in
             /*) # Filename
                 AL_FILELIST=$(append "$AL_FILELIST" "$A") ;;
             \|*) # Pipe
-                AL_PIPELIST=$(append "$AL_PIPELIST" "$A") ;;
-            :*) # Include file
-                AL_INCLIST=$(append "$AL_INCLIST" "$A") ;;
+                AL_PIPELIST=$(append "$AL_PIPELIST" "${A##|}") ;;
+            :include:*) # Include file
+                AL_INCLIST=$(append "$AL_INCLIST" "${A##:include:}") ;;
+            error:*) # Error code and message
+                # Just append everything to a list
+                AL_ERRLIST=$(append "$AL_ERRLIST" "${A##error:}") ;;
+            maildir:*) # Maildir path
+                AL_MDIRLIST=$(append "$AL_MDIRLIST" "${A##maildir:}") ;;
             *@*) # Inet mailaddress
                 AL_INETLIST=$(append "$AL_INETLIST" "$A") ;;
             *) # Local address?
@@ -365,6 +373,19 @@ while [ -n "$ALIST" ]; do
             continue ;;
         *)
             resolve_aliases $R
+            # Only allow aliasing to local users
+            [ -z "$AL_INETLIST" ] \
+                || complain "/etc/aliases has aliases to external addresses."
+            [ -z "$AL_PIPELIST" ] \
+                || complain "/etc/aliases has aliases to pipes."
+            [ -z "$AL_FILELIST" ] \
+                || complain "/etc/aliases has aliases to files."
+            [ -z "$AL_MDIRLIST" ] \
+                || complain "/etc/aliases has aliases to maildirs."
+            [ -z "$AL_ERRLIST" ] \
+                || complain "/etc/aliases has aliases to error targets."
+            [ -z "$AL_INCLIST" ] \
+                || complain "/etc/aliases contains includes."
             if [ "$R" != "$AL_LOCLIST" ] ; then
                 ALIST=$(append "$AL_LOCLIST" "$ALIST")
                 continue

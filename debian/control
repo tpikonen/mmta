@@ -4,6 +4,8 @@ Priority: optional
 Maintainer: Teemu Ikonen <tpikonen@gmail.com>
 Homepage: https://github.com/tpikonen/mmta
 Build-Depends: debhelper (>=7), liblockfile-dev
+# Build-deps for manpage translation:
+# asciidoc-base, docbook-xml, xsltproc
 Standards-Version: 3.9.4
 
 Package: mmta
@@ -20,6 +22,6 @@ Description: Minimalistic mail transport agent for desktop systems
  using external programs such as msmtp.
  .
  The functionality of mmta is limited by design to receiving a message
- and immediately storing it either to a mailbox of a local receiver, 
- or to a user specific spool directory. Attempts at forwarding mail
+ and immediately storing it either to a mailbox of a local receiver,
+ or to a user specific spool directory. Attempts at sending mail
  destined to external hosts are made periodically with a cron job.

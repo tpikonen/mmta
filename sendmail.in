@@ -318,6 +318,10 @@ while [ $# -gt 0 ] ; do
     shift
 done
 
+find_script "can-send" "CAN_SEND"
+find_script "queue-mail" "QUEUE_MAIL"
+find_script "send-queue" "SEND_QUEUE"
+
 for PAR in $@ ; do
     RECIPIENTS="$RECIPIENTS,$PAR"
 done
@@ -336,10 +340,6 @@ if [ "$PARSE_MSG" = "1" ] ; then
     RECIPIENTS=$(append "$RECIPIENTS" "$BCCLIST")
     clear_bcc $TEMPF
 fi
-
-find_script "can-send" "CAN_SEND"
-find_script "queue-mail" "QUEUE_MAIL"
-find_script "send-queue" "SEND_QUEUE"
 
 $CAN_SEND
 SEND_INET=$?

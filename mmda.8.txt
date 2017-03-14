@@ -1,4 +1,4 @@
-MMDA(1)
+MMDA(8)
 =======
 
 NAME
@@ -65,4 +65,4 @@ $HOME/.config/mmta/send-queue
 
 SEE ALSO
 --------
-forward(5), sendmail(1), safecat(1), dotlockfile(1)
+forward(5), sendmail(8), safecat(1), dotlockfile(1)

@@ -1,4 +1,4 @@
-SENDMAIL(1)
+SENDMAIL(8)
 ===========
 
 NAME
@@ -58,7 +58,7 @@ EXIT STATUS
 
 SEE ALSO
 --------
-mmda(1), msmtp(1), safecat(1)
+mmda(8), msmtp(1), safecat(1)
 
 RESOURCES
 ---------

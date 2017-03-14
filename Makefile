@@ -13,7 +13,9 @@ SYSCONFDIR ?= "/etc/mmta"
 CFLAGS += -Wall -DUSERCONFDIR='$(USERCONFDIR)' -DSYSCONFDIR='$(SYSCONFDIR)'
 CFLAGS += -DDEBUG=0
 
-all: mmda mmta-send-queue sendmail sendmail.1 mmda.1
+manpages := $(patsubst %.txt,%,$(wildcard *.[1-8].txt))
+
+all: mmda mmta-send-queue sendmail $(manpages)
 
 install: mmda mmta-send-queue sendmail
 	install -D --mode=a=rx,u+w sendmail $(DESTDIR)$(sbindir)/sendmail
@@ -42,9 +44,14 @@ mmda: mmda.c mmta-common.o
 mmta-send-queue: mmta-send-queue.c mmta-common.o
 	gcc -o mmta-send-queue mmta-send-queue.c mmta-common.o $(CPPFLAGS) $(CFLAGS) $(LDFLAGS)
 
-%.1:%.1.txt
-	[ -x /usr/bin/a2x ] && a2x -f manpage $< \
+%.5 : %.5.txt
+%.8 : %.8.txt
+$(manpages) :
+	[ -x /usr/bin/a2x ] && a2x -f manpage $@.txt \
 		|| printf "***\n*** Asciidoc /usr/bin/a2x not found\n***\n" ;\
 
 clean:
 	-rm -f mmda mmta-send-queue mmta-common.o sendmail
+
+realclean: clean
+	-rm -r $(manpages)

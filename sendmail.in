@@ -351,16 +351,12 @@ fi
 
 $CAN_SEND
 SEND_INET=$?
-if [ $SEND_INET = "0" ] ; then
-    MARG="deliver"
-else
-    MARG="forward"
-fi
 
 # Local delivery loop
 LOCAL_SENT=""
 INET_RECV=""
 FORWARDERS=""
+FAILED_USERS=""
 ALIST=$RECIPIENTS
 while [ -n "$ALIST" ]; do
     A=${ALIST%%,*}
@@ -399,18 +395,35 @@ while [ -n "$ALIST" ]; do
     if contains "$LOCAL_SENT" "$R" ; then
         continue
     fi
-    FLIST=$(cat $TEMPF | $MMDA $MARG $R)
-    ECODE=$?
-    if [ $ECODE != "0" ] ; then
-        complain "Local delivery from $(whoami) to $R failed"
-        complain "'$MMDA $MARG $R' exit code $ECODE"
-    fi
-    FLIST=$(echo $FLIST | sed -n '1h;1!H;${;g;s/\n/,/g;p;}')
-    ALIST=$(append "$FLIST" "$ALIST")
-    LOCAL_SENT=$(append "$LOCAL_SENT" "$R")
-    if [ "$SEND_INET" != "0" ] ; then
+    if [ "$SEND_INET" = "0" ] ; then
+        # We can send external mail, do not use the recipients mail
+        # queue, get local and external addresses from recipients
+        # .forward and deliver to rest of the .forward targets.
+        FWDLIST=$(cat $TEMPF | $MMDA --no-queue $R)
+        ECODE=$?
+        # FIXME: Do more nuanced error handling based on mmda exit codes
+        if [ $ECODE != "0" ] ; then
+            complain "Local delivery from $(whoami) to $R failed"
+            complain "'$MMDA --no-queue $R' exit code $ECODE"
+            FAILED_USERS=$(append "$FAILED_USERS" "$R")
+        fi
+    else
+        # We cannot send external mail, get local addresses from recipients
+        # .forward and deliver to external addresses by running recipients
+        # 'queue-mail' script. Also deliver to rest of the .forward targets.
+        FWDLIST=$(cat $TEMPF | $MMDA $R)
+        ECODE=$?
+        # FIXME: Do more nuanced error handling based on mmda exit codes
+        if [ $ECODE != "0" ] ; then
+            complain "Delivery from $(whoami) to $R failed"
+            complain "'$MMDA $R' exit code $ECODE"
+            FAILED_USERS=$(append "$FAILED_USERS" "$R")
+        fi
         FORWARDERS=$(append "$FORWARDERS" "$R")
     fi
+    FWDLIST=$(echo $FWDLIST | sed -n '1h;1!H;${;g;s/\n/,/g;p;}')
+    ALIST=$(append "$FWDLIST" "$ALIST")
+    LOCAL_SENT=$(append "$LOCAL_SENT" "$R")
 done
 
 INET_RECV=$(echo -n ${INET_RECV} | tr ',' '\n' | sort | uniq | tr '\n' ',')

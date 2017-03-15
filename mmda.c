@@ -15,6 +15,7 @@
 #include <pwd.h>
 #include <lockfile.h>
 #include <time.h>
+#include <linux/limits.h>
 
 #include "mmta-common.h"
 
@@ -33,10 +34,10 @@
 /* This function is run as suid root */
 void touchmbox(const char *uname, int uid)
 {
-    char mboxname[SLEN];
+    char mboxname[PATH_MAX];
     struct stat ss;
 
-    snprintf(mboxname, SLEN-1, "%s/%s", MAILDIR, uname);
+    snprintf(mboxname, PATH_MAX-1, "%s/%s", MAILDIR, uname);
     if(stat(mboxname, &ss) < 0) {
         int fd, ret;
         /* touch file */
@@ -60,16 +61,16 @@ void touchmbox(const char *uname, int uid)
 }
 
 
-int mboxmail(FILE* infile, const char *mboxname, const char *cname)
+int mboxmail(FILE* infile, const char *mboxname, const char *callername)
 {
     FILE *f;
-    char lockname[SLEN];
+    char lockname[PATH_MAX];
     int locksz;
     int c;
     time_t t;
 
-    locksz = snprintf(lockname, SLEN-1, "%s.lock", mboxname);
-    if((locksz != strnlen(mboxname, SLEN)+5) \
+    locksz = snprintf(lockname, PATH_MAX-1, "%s.lock", mboxname);
+    if((locksz != strnlen(mboxname, PATH_MAX)+5) \
         || lockfile_create(lockname, 4, 0) != 0) {
         return 13;
     }
@@ -80,7 +81,8 @@ int mboxmail(FILE* infile, const char *mboxname, const char *cname)
         return 3;
     }
     time(&t);
-    fprintf(f, "From %s %s", cname, ctime(&t)); //FIXME: doesn't print timezone
+    //FIXME: doesn't print timezone
+    fprintf(f, "From %s %s", callername, ctime(&t));
     c = getc(infile);
     while(!feof(infile)) {
         putc(c, f);
@@ -113,7 +115,8 @@ void eat_wspace(char *buf)
 
 
 void runforward(const char *fwdname, FILE *mfile, const char *uname,
-                const char *homedir, char *cname, int send)
+                const char *homedir, char *callername, int send,
+                int force_mbox)
 {
     FILE *fwd;
     char buf[SLEN];
@@ -121,7 +124,8 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
     int status;
     char *sargv[SLEN];
     int sargc;
-    char scriptname[SLEN];
+    char scriptname[PATH_MAX];
+    int mail_is_mboxed;
 
     fwd = fopen(fwdname, "r");
     if(fwd == NULL) {
@@ -129,6 +133,7 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
         exit(1);
     }
 
+    mail_is_mboxed = 0;
     sargc = 1;
     while(!feof(fwd)) {
         fseek(mfile, 0, SEEK_SET);
@@ -179,7 +184,7 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
             debug_print("   is pipe to |%s|", argv[0]);
             runprog(argv, mfile, homedir);
         } else if(buf[0] == '/') {
-            mboxmail(mfile, buf, cname);
+            mboxmail(mfile, buf, callername);
             debug_print("   is extra mbox file |%s|", buf);
         } else if(strchr(buf, '@')) {
             debug_print("   is external address:|%s|", buf);
@@ -195,10 +200,11 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
                 printf("%s\n", buf);
             }
         } else if(strncmp(uname, buf, SLEN) == 0) {
-                char mboxname[SLEN];
+                char mboxname[PATH_MAX];
 
-                snprintf(mboxname, SLEN, "%s/%s", MAILDIR, uname);
-                mboxmail(mfile, mboxname, cname); // FIXME: check retval
+                snprintf(mboxname, PATH_MAX, "%s/%s", MAILDIR, uname);
+                mboxmail(mfile, mboxname, callername); // FIXME: check retval
+                mail_is_mboxed = 1;
                 debug_print("   is own mailbox of user %s", uname);
         } else {
             debug_print("   is local address:|%s|", buf);
@@ -216,6 +222,13 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
         }
         // FIXME: Maybe run free() on sargv[>0]
     }
+    if(force_mbox && !mail_is_mboxed) {
+        char mboxname[PATH_MAX];
+
+        snprintf(mboxname, PATH_MAX, "%s/%s", MAILDIR, uname);
+        mboxmail(mfile, mboxname, callername); // FIXME: check retval
+        debug_print("Forced mboxing.");
+    }
     exit(0);
 }
 
@@ -223,20 +236,37 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
 int main(int argc, char *argv[])
 {
     struct passwd *userinfo;
-    struct passwd *callerinfo;
-    uid_t uid, cuid;
-    char *uname, *cmd;
-    char cname[SLEN];
+    uid_t uid;
+    char *uname;
+    char callername[SLEN];
     char shell[SLEN];
-    char homedir[SLEN];
-    char fwdname[SLEN];
+    char homedir[PATH_MAX];
+    char fwdname[PATH_MAX];
+    int no_external, force_mbox;
+    int i;
 
-    if(argc < 3) {
+    if(argc < 2) {
         fprintf(stderr, "mmda: Not enough arguments.");
         exit(1);
     }
-    cmd = argv[1];
-    uname = argv[2];
+    no_external = 0;
+    force_mbox = 0;
+    for(i = 1; i < argc && argv[i][0] == '-'; i++) {
+        if(strncmp(argv[i], "--no-external", 13) == 0) {
+            no_external = 1;
+        } else if(strncmp(argv[i], "--force-mbox", 12) == 0) {
+            force_mbox = 1;
+        } else {
+            fprintf(stderr, "mmda: Unknown option '%s'\n in command line.\n", \
+                argv[i]);
+            exit(4);
+        }
+    }
+    if(i >= argc) {
+        fprintf(stderr, "mmda: No <user> argument found.\n");
+        exit(4);
+    }
+    uname = argv[i];
 #if DENY_ROOT
     if(!strncmp(uname, "root", 5)) {
         exit(2);
@@ -256,47 +286,62 @@ int main(int argc, char *argv[])
     }
     strncpy(shell, userinfo->pw_shell, SLEN-1);
     shell[SLEN-1] = '\0';
-    strncpy(homedir, userinfo->pw_dir, SLEN-1);
-    homedir[SLEN-1] = '\0';
+    strncpy(homedir, userinfo->pw_dir, PATH_MAX-1);
+    homedir[PATH_MAX-1] = '\0';
     /* Check if user is ok to receive mail */
     if(!checkshell(shell)) {
         fprintf(stderr, "mmda: Receiver %s not allowed to log in, exiting.", \
             uname);
         exit(1);
     }
-
-    cuid = getuid();
-    callerinfo = getpwuid(cuid);
-    if(!callerinfo) {
-        exit(3);
-    }
-    strncpy(cname, callerinfo->pw_name, SLEN-1);
     touchmbox(uname, uid);
+
+    do {
+        struct passwd *callerinfo;
+        uid_t cuid;
+
+        cuid = getuid();
+        callerinfo = getpwuid(cuid);
+        if(!callerinfo) {
+            exit(3);
+        }
+        strncpy(callername, callerinfo->pw_name, SLEN-1);
+    } while(0);
+
     /* Drop privs */
     if(setuid(uid) != 0) {
         perror("setuid failed");
         exit(4);
     }
 
-    if(!strncmp(cmd, "deliver", 7) || !strncmp(cmd, "forward", 7)) {
-        int send, status, c;
-        FILE *mfile;
+    snprintf(fwdname, PATH_MAX-1, "%s/.forward", homedir);
+    do {
         int statret;
         struct stat ss;
 
-        snprintf(fwdname, SLEN-1, "%s/.forward", homedir);
         statret = stat(fwdname, &ss);
-        if((statret != 0) || ((ss.st_uid != uid) && (ss.st_uid != 0))) {
-            /* .forward does not exist or not owned by user or root */
-            char mboxname[SLEN];
+        if((statret != 0) || ((ss.st_uid != uid) && (ss.st_uid != 0)) \
+            || !S_ISREG(ss.st_mode) || ss.st_mode & (S_IWGRP | S_IWOTH)) {
+            /* .forward does not exist or not owned by user or root
+             * or is not regular file or is group or world writable.
+             * */
+            char mboxname[PATH_MAX];
 
-            snprintf(mboxname, SLEN, "%s/%s", MAILDIR, uname);
-            return mboxmail(stdin, mboxname, cname);
+            snprintf(mboxname, PATH_MAX, "%s/%s", MAILDIR, uname);
+            // FIXME: do error handling on mboxmail and return
+            // a known exit code for invalid .forward
+            return mboxmail(stdin, mboxname, callername);
         }
+    } while(0);
+
+    do {
+        int send, status, c;
+        FILE *mfile;
+
         send = 0;
-        if(!strncmp(cmd, "forward", 7)) {
+        if(!no_external) {
             char *sargv[SLEN];
-            char script[SLEN];
+            char script[PATH_MAX];
 
             /* Check if we can send external mail */
             if(find_script(script, "can-send", homedir)) {
@@ -323,9 +368,8 @@ int main(int argc, char *argv[])
             fprintf(stderr, "mmda: Error copying to temporary file.\n");
             exit(1);
         }
-        runforward(fwdname, mfile, uname, homedir, cname, send);
-    } else {
-        printf("Unknown command\n");
-    }
-    exit(66);
+        runforward(fwdname, mfile, uname, homedir, callername, send, \
+            force_mbox);
+    } while(0);
+    exit(0);
 }

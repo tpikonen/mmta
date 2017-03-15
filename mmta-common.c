@@ -12,12 +12,12 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <linux/limits.h>
+
+#include "mmta-common.h"
 
 #define SLEN 1024
 
-#define debug_print(FORMAT, ...) \
-    do { if (DEBUG) fprintf(stderr, "%s() in %s:%i: " FORMAT "\n", \
-        __func__, __FILE__, __LINE__, ##__VA_ARGS__); } while (0)
 
 /* Check if a given shell is in /etc/shells
  * Return 1 if it is, 0 if not */

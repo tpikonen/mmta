@@ -5,6 +5,10 @@
  * License: GPLv2+
  */
 
+#define debug_print(FORMAT, ...) \
+    do { if (DEBUG) fprintf(stderr, "%s() in %s:%i: " FORMAT "\n", \
+        __func__, __FILE__, __LINE__, ##__VA_ARGS__); } while (0)
+
 int checkshell(const char *shell);
 char *find_script(char *fullpath, const char *script, const char *homedir);
 void execprog(char * const argv[], const char *homedir);

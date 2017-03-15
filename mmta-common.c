@@ -39,11 +39,11 @@ char *find_script(char *fullpath, const char *script, const char *homedir)
 {
     struct stat ss;
 
-    snprintf(fullpath, SLEN, "%s/%s/%s", homedir, USERCONFDIR, script);
+    snprintf(fullpath, PATH_MAX, "%s/%s/%s", homedir, USERCONFDIR, script);
     if(!stat(fullpath, &ss) && (ss.st_mode & S_IXUSR)) {
         return fullpath;
     } else {
-        snprintf(fullpath, SLEN, "%s/%s", SYSCONFDIR, script);
+        snprintf(fullpath, PATH_MAX, "%s/%s", SYSCONFDIR, script);
         if(!stat(fullpath, &ss) && (ss.st_mode & S_IXUSR)) {
             return fullpath;
         } else {
@@ -57,9 +57,9 @@ void execprog(char * const argv[], const char *homedir)
 {
     char *newenv[3];
     char *path = "PATH=/bin:/usr/bin";
-    char home[SLEN];
+    char home[PATH_MAX];
 
-    snprintf(home, SLEN, "HOME=%s", homedir);
+    snprintf(home, PATH_MAX, "HOME=%s", homedir);
     newenv[0] = path;
     newenv[1] = home;
     newenv[2] = NULL;
@@ -86,6 +86,3 @@ int runprog(char * const argv[], FILE *input, const char *homedir)
 
     return status;
 }
-
-
-

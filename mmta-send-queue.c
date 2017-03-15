@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pwd.h>
+#include <linux/limits.h>
 
 #include "mmta-common.h"
 
@@ -26,7 +27,7 @@ int main(int argc, char *argv[])
     uid_t uid;
     char *uname;
     char shell[SLEN];
-    char homedir[SLEN];
+    char homedir[PATH_MAX];
 
     if(argc < 2) {
         fprintf(stderr, "mmta-send-queue: Not enough arguments.");
@@ -54,8 +55,8 @@ int main(int argc, char *argv[])
 #endif
     strncpy(shell, userinfo->pw_shell, SLEN-1);
     shell[SLEN-1] = '\0';
-    strncpy(homedir, userinfo->pw_dir, SLEN-1);
-    homedir[SLEN-1] = '\0';
+    strncpy(homedir, userinfo->pw_dir, PATH_MAX-1);
+    homedir[PATH_MAX-1] = '\0';
     /* Check if user is ok to receive mail */
     if(!checkshell(shell)) {
         fprintf(stderr, "mmta-send-queue: Receiver %s not allowed to log in, exiting.", \
@@ -70,7 +71,7 @@ int main(int argc, char *argv[])
     }
 
     char *sargv[SLEN];
-    char script[SLEN];
+    char script[PATH_MAX];
     int status;
 
     if(find_script(script, "send-queue", homedir)) {

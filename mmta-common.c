@@ -74,7 +74,7 @@ int runprog(char * const argv[], FILE *input, const char *homedir)
 
     if((cpid = fork()) < 0) {
         perror("fork failed");
-        exit(123);
+        return 1;
     }
     if(cpid == 0) {
         dup2(fileno(input), 0);

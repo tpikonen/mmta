@@ -27,7 +27,7 @@
 
 /* Make sure a correct mbox file for user exists */
 /* This function is run as suid root */
-void touchmbox(const char *uname, int uid)
+int touchmbox(const char *uname, int uid)
 {
     char mboxname[PATH_MAX];
     struct stat ss;
@@ -37,12 +37,12 @@ void touchmbox(const char *uname, int uid)
         int fd, ret;
         /* touch file */
         if((fd = creat(mboxname, 0660)) < 0) {
-            perror("Could not create mailbox");
-            exit(1);
+            perror("mmda: Could not create mailbox");
+            return 1;
         }
         if((ret = fchown(fd, uid, MAIL_GID)) < 0) {
-            perror("Could not fchown mailbox");
-            exit(1);
+            perror("mmda: Could not fchown mailbox");
+            return 1;
         }
         close(fd);
         stat(mboxname, &ss);
@@ -51,8 +51,9 @@ void touchmbox(const char *uname, int uid)
     if(ss.st_uid != uid || !S_ISREG(ss.st_mode) || (ss.st_mode & 0707) != 0600 )
     {
         fprintf(stderr, "Unacceptable owner or mode on mailbox %s", mboxname);
-        exit(1);
+        return 1;
     }
+    return 0;
 }
 
 
@@ -129,16 +130,22 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
     int sargc;
     char scriptname[PATH_MAX];
     int mail_is_mboxed;
+    int exit_code;
 
+#define set_exit_code(ECODE) do { \
+    exit_code = (exit_code > (ECODE) ? exit_code : (ECODE)); } while(0);
+
+    exit_code = 0;
     fwd = fopen(fwdname, "r");
     if(fwd == NULL) {
-        fprintf(stderr, "mmda: Forward file %s disappeared?\n", fwdname);
-        exit(1);
+        fprintf(stderr, "mmda: Forward file %s disappeared.\n", fwdname);
+        /* Set highest exit code after user mbox failure */
+        set_exit_code(E_MMDA_MBOXFAIL);
     }
 
     mail_is_mboxed = 0;
     sargc = 1;
-    while(!feof(fwd)) {
+    while(fwd && !feof(fwd)) {
         fseek(mfile, 0, SEEK_SET);
         if(fgets(buf, SLEN, fwd) == NULL) {
             break;
@@ -160,7 +167,9 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
 
             end = strrchr(buf, buf[0]);
             if(end <= buf) {
-                exit(0);
+                fprintf(stderr, "mmda: Bad .forward file '%s'\n", fwdname);
+                set_exit_code(E_MMDA_FILEFAIL);
+                break;
             }
             memmove(buf, buf+1, end-buf-1);
             buf[end-buf-1] = '\0';
@@ -185,27 +194,35 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
                 argv[i] = tok;
             }
             debug_print("   is pipe to |%s|", argv[0]);
-            runprog(argv, mfile, homedir);
+            if(runprog(argv, mfile, homedir)) {
+                set_exit_code(E_MMDA_PIPEFAIL);
+            }
         } else if(buf[0] == '/') {
-            mboxmail(mfile, buf, callername);
+            if(mboxmail(mfile, buf, callername)) {
+                set_exit_code(E_MMDA_FILEFAIL);
+            }
             debug_print("   is extra mbox file |%s|", buf);
         } else if(strchr(buf, '@')) {
             debug_print("   is external address:|%s|", buf);
             if(send) {
                 sargv[sargc] = (char *) malloc(strnlen(buf, SLEN)+1);
                 if(sargv[sargc] == NULL) {
-                    fprintf(stderr, "mmda: malloc failed.");
-                    exit(1);
+                    perror("mmda: malloc failed.");
+                    set_exit_code(E_MMDA_QFAIL);
+                } else {
+                    strcpy(sargv[sargc], buf);
+                    sargc++;
                 }
-                strcpy(sargv[sargc], buf);
-                sargc++;
             } else {
                 printf("%s\n", buf);
             }
         } else if(strncmp(uname, buf, SLEN) == 0) {
-                usermboxmail(mfile, uname, callername); // FIXME: check retval
+            debug_print("   is own mailbox of user %s", uname);
+            if(usermboxmail(mfile, uname, callername)) {
+                set_exit_code(E_MMDA_UMBXFAIL);
+            } else {
                 mail_is_mboxed = 1;
-                debug_print("   is own mailbox of user %s", uname);
+            }
         } else {
             debug_print("   is local address:|%s|", buf);
             printf("%s\n", buf);
@@ -213,20 +230,26 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
     }
     fclose(fwd);
 
-    if(send && find_script(scriptname, "queue-mail", homedir)) {
-        sargv[0] = scriptname;
-        sargv[sargc] = NULL;
-        status = runprog(sargv, mfile, homedir);
-        if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-            exit(66);
+    if(send) {
+        if(find_script(scriptname, "queue-mail", homedir)) {
+            sargv[0] = scriptname;
+            sargv[sargc] = NULL;
+            status = runprog(sargv, mfile, homedir);
+            if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+                fprintf(stderr, "mmda: 'queue-mail' for user %s failed.\n", \
+                    uname);
+                set_exit_code(E_MMDA_QFAIL);
+            }
         }
-        // FIXME: Maybe run free() on sargv[>0]
     }
-    if(force_mbox && !mail_is_mboxed) {
-        usermboxmail(mfile, uname, callername); // FIXME: check retval
+    /* If .forward processing had errors, force mail to user mbox */
+    if((exit_code || force_mbox) && !mail_is_mboxed) {
         debug_print("Forced mboxing.");
+        if(usermboxmail(mfile, uname, callername)) {
+            set_exit_code(E_MMDA_UMBXFAIL);
+        }
     }
-    exit(0);
+    exit(exit_code);
 }
 
 
@@ -244,7 +267,7 @@ int main(int argc, char *argv[])
 
     if(argc < 2) {
         fprintf(stderr, "mmda: Not enough arguments.");
-        exit(1);
+        exit(E_MMDA_NODELIVR);
     }
     no_external = 0;
     force_mbox = 0;
@@ -256,22 +279,22 @@ int main(int argc, char *argv[])
         } else {
             fprintf(stderr, "mmda: Unknown option '%s'\n in command line.\n", \
                 argv[i]);
-            exit(4);
+            exit(E_MMDA_NODELIVR);
         }
     }
     if(i >= argc) {
         fprintf(stderr, "mmda: No <user> argument found.\n");
-        exit(4);
+        exit(E_MMDA_NODELIVR);
     }
     uname = argv[i];
 #if DENY_ROOT
     if(!strncmp(uname, "root", 5)) {
-        exit(2);
+        exit(E_MMDA_NODELIVR);
     }
 #endif
     userinfo = getpwnam(uname);
     if(!userinfo) {
-        exit(3);
+        exit(E_MMDA_NODELIVR);
     }
     uid = userinfo->pw_uid;
 #if DENY_ROOT
@@ -279,7 +302,7 @@ int main(int argc, char *argv[])
 #else
     if((uid < 1000) && (uid != 0)) {
 #endif
-        exit(2);
+        exit(E_MMDA_NODELIVR);
     }
     strncpy(shell, userinfo->pw_shell, SLEN-1);
     shell[SLEN-1] = '\0';
@@ -289,9 +312,11 @@ int main(int argc, char *argv[])
     if(!checkshell(shell)) {
         fprintf(stderr, "mmda: Receiver %s not allowed to log in, exiting.", \
             uname);
-        exit(1);
+        exit(E_MMDA_NODELIVR);
     }
-    touchmbox(uname, uid);
+    if(touchmbox(uname, uid)) {
+        exit(E_MMDA_NODELIVR);
+    }
 
     do {
         struct passwd *callerinfo;
@@ -300,15 +325,16 @@ int main(int argc, char *argv[])
         cuid = getuid();
         callerinfo = getpwuid(cuid);
         if(!callerinfo) {
-            exit(3);
+            perror("mmda: getpwuid failed.");
+            exit(E_MMDA_NODELIVR);
         }
         strncpy(callername, callerinfo->pw_name, SLEN-1);
     } while(0);
 
     /* Drop privs */
     if(setuid(uid) != 0) {
-        perror("setuid failed");
-        exit(4);
+        perror("mmda: setuid failed");
+        exit(E_MMDA_NODELIVR);
     }
 
     snprintf(fwdname, PATH_MAX-1, "%s/.forward", homedir);
@@ -321,10 +347,16 @@ int main(int argc, char *argv[])
             || !S_ISREG(ss.st_mode) || ss.st_mode & (S_IWGRP | S_IWOTH)) {
             /* .forward does not exist or not owned by user or root
              * or is not regular file or is group or world writable.
+             * Just make a delivery to the mbox and GTFO.
              * */
-            // FIXME: do error handling on mboxmail and return
-            // a known exit code for invalid .forward
-            return usermboxmail(stdin, uname, callername);
+            if(((ss.st_uid != uid) && (ss.st_uid != 0)) \
+                || !S_ISREG(ss.st_mode) || ss.st_mode & (S_IWGRP | S_IWOTH)) {
+                fprintf(stderr, "mmda: Bad owner or mode in '%s'\n", fwdname);
+            }
+            if(usermboxmail(stdin, uname, callername)) {
+                exit(E_MMDA_NODELIVR);
+            }
+            exit(0);
         }
     } while(0);
 
@@ -345,12 +377,15 @@ int main(int argc, char *argv[])
                 if(WIFEXITED(status) && WEXITSTATUS(status) == 0) {
                     send = 1;
                 }
+            } else {
+                fprintf(stderr, \
+                    "mmda: 'can-send' script for user %s not found.", uname);
             }
         }
         mfile = tmpfile();
         if(mfile == NULL) {
-            fprintf(stderr, "mmda: Could not open temporary file.\n");
-            exit(1);
+            perror("mmda: Could not open temporary file.");
+            exit(E_MMDA_NODELIVR);
         }
         c = getc(stdin);
         while(!feof(stdin)) {
@@ -359,11 +394,12 @@ int main(int argc, char *argv[])
         }
         if(ferror(mfile)) {
             /* some error */
-            fprintf(stderr, "mmda: Error copying to temporary file.\n");
-            exit(1);
+            perror("mmda: Error copying to temporary file.");
+            exit(E_MMDA_NODELIVR);
         }
         runforward(fwdname, mfile, uname, homedir, callername, send, \
             force_mbox);
     } while(0);
-    exit(0);
+
+    exit(E_MMDA_NODELIVR);
 }

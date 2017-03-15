@@ -5,6 +5,8 @@
  * License: GPLv2+
  */
 
+#define SLEN 1024
+
 #define debug_print(FORMAT, ...) \
     do { if (DEBUG) fprintf(stderr, "%s() in %s:%i: " FORMAT "\n", \
         __func__, __FILE__, __LINE__, ##__VA_ARGS__); } while (0)

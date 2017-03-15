@@ -19,7 +19,6 @@
 
 #include "mmta-common.h"
 
-#define SLEN 1024
 #define DENY_ROOT 1
 #define MAILDIR "/var/mail"
 /* The GID for group mail is always 8 at least in Debian */

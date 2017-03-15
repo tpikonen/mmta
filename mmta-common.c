@@ -16,8 +16,6 @@
 
 #include "mmta-common.h"
 
-#define SLEN 1024
-
 
 /* Check if a given shell is in /etc/shells
  * Return 1 if it is, 0 if not */

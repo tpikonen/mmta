@@ -17,7 +17,6 @@
 
 #include "mmta-common.h"
 
-#define SLEN 1024
 #define DENY_ROOT 1
 
 

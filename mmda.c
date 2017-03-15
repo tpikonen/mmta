@@ -101,6 +101,14 @@ int mboxmail(FILE* infile, const char *mboxname, const char *callername)
 }
 
 
+int usermboxmail(FILE* infile, const char *uname, const char* callername) {
+    char mboxname[PATH_MAX];
+
+    snprintf(mboxname, PATH_MAX, "%s/%s", MAILDIR, uname);
+    return mboxmail(infile, mboxname, callername);
+}
+
+
 void eat_wspace(char *buf)
 {
     int i;
@@ -200,10 +208,7 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
                 printf("%s\n", buf);
             }
         } else if(strncmp(uname, buf, SLEN) == 0) {
-                char mboxname[PATH_MAX];
-
-                snprintf(mboxname, PATH_MAX, "%s/%s", MAILDIR, uname);
-                mboxmail(mfile, mboxname, callername); // FIXME: check retval
+                usermboxmail(mfile, uname, callername); // FIXME: check retval
                 mail_is_mboxed = 1;
                 debug_print("   is own mailbox of user %s", uname);
         } else {
@@ -223,10 +228,7 @@ void runforward(const char *fwdname, FILE *mfile, const char *uname,
         // FIXME: Maybe run free() on sargv[>0]
     }
     if(force_mbox && !mail_is_mboxed) {
-        char mboxname[PATH_MAX];
-
-        snprintf(mboxname, PATH_MAX, "%s/%s", MAILDIR, uname);
-        mboxmail(mfile, mboxname, callername); // FIXME: check retval
+        usermboxmail(mfile, uname, callername); // FIXME: check retval
         debug_print("Forced mboxing.");
     }
     exit(0);
@@ -325,12 +327,9 @@ int main(int argc, char *argv[])
             /* .forward does not exist or not owned by user or root
              * or is not regular file or is group or world writable.
              * */
-            char mboxname[PATH_MAX];
-
-            snprintf(mboxname, PATH_MAX, "%s/%s", MAILDIR, uname);
             // FIXME: do error handling on mboxmail and return
             // a known exit code for invalid .forward
-            return mboxmail(stdin, mboxname, callername);
+            return usermboxmail(stdin, uname, callername);
         }
     } while(0);
 

@@ -432,6 +432,7 @@ INET_RECV=$(echo -n ${INET_RECV} | tr ',' '\n' | sort | uniq | tr '\n' ',')
 if [ "$SEND_INET" = "0" ] ; then
     if [ -n "$INET_RECV" ] ; then
         QARGS=$(echo $INET_RECV | tr ',' ' ')
+        # FIXME: Check return values of script calls
         cat $TEMPF | $QUEUE_MAIL $QARGS
         if is_online ; then
             $SEND_QUEUE
@@ -439,6 +440,7 @@ if [ "$SEND_INET" = "0" ] ; then
     fi
 else
     if [ -n "$INET_RECV" ] ; then
+        # Original recipients had external addresses, but we cannot send.
         complain "Warning: Could not send to following external addresses: $INET_RECV"
     fi
     if is_online ; then

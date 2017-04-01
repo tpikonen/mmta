@@ -155,13 +155,13 @@ get_aliases()
 }
 
 
-# resolve_aliases $USER
-# Recursively alias-expand $USER. Output in global vars AL_LOCLIST, etc.
-# If user does not have aliases, returns $USER
+# resolve_aliases $UNAME
+# Recursively alias-expand $UNAME. Output in global vars AL_LOCLIST, etc.
+# If user does not have aliases, returns $UNAME
 resolve_aliases()
 {
-    local USER PROCESSED A ALIST LIST
-    USER=$1
+    local UNAME PROCESSED A ALIST LIST
+    UNAME=$1
     PROCESSED=$1
     AL_LOCLIST=""
     AL_INETLIST=""
@@ -171,7 +171,7 @@ resolve_aliases()
     AL_INCLIST=""
     AL_ERRLIST=""
 
-    ALIST=$(get_aliases $USER)
+    ALIST=$(get_aliases $UNAME)
     A=""
     while [ -n "$ALIST" ] ; do
         A=${ALIST%%,*}
@@ -206,7 +206,7 @@ resolve_aliases()
         esac
     done
     if [ -z "$AL_LOCLIST" ] ; then
-        AL_LOCLIST=$USER
+        AL_LOCLIST=$UNAME
     fi
     return 1
 }

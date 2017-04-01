@@ -334,7 +334,7 @@ for PAR in $@ ; do
     RECIPIENTS="$RECIPIENTS,$PAR"
 done
 
-TEMPF=$(tempfile)
+TEMPF=$(tempfile -p mmta-)
 [ "$?" = "0" ] || die 1 "Could not create a temporary file"
 
 cat >> $TEMPF

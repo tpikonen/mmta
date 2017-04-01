@@ -12,6 +12,15 @@ PINGHOST="www.google.com"
 PWFILE="/etc/passwd"
 ALIASFILE="/etc/aliases"
 
+# mmda exit codes
+E_MMDA_NODELIVR=8   # No delivery at all
+E_MMDA_UMBXFAIL=7   # User mbox could not be delivered, other
+                    # targets possibly were
+E_MMDA_MBOXFAIL=6   # Could not deliver to mbox target
+E_MMDA_FILEFAIL=5   # Could not deliver to file target
+E_MMDA_PIPEFAIL=4   # Could not deliver to pipe target
+E_MMDA_QFAIL=3      # 'queue-mail' script failed
+
 
 # complain $MESSAGE
 # Print and log a string
@@ -98,7 +107,7 @@ map_list ()
     fi
     A=${ALIST%%,*}
     ALIST=$(cdr "$ALIST")
-    $FUNC "$A"    
+    $FUNC "$A"
     while [ -n "$ALIST" ] ; do
         A=${ALIST%%,*}
         ALIST=$(cdr "$ALIST")
@@ -273,6 +282,31 @@ clear_bcc ()
 }
 
 
+# forwardfail_mail $UNAME $MMDA_ECODE
+# mail $UNAME about the failure of .forward targets
+forwardfail_mail ()
+{
+    local UNAME MMDA_ECODE
+    UNAME=$1
+    MMDA_ECODE=$2
+
+   $MMDA --force-mbox $UNAME <<@EOF@
+From: MMTA mail system <postmaster@localhost>
+To: ${UNAME}
+Subject: Failures in mail forwarding of your account
+
+Dear ${UNAME},
+
+Your mail account had failures in delivering messages via the .forward
+mechanism. Please check your mail forwarding.
+
+This message has been sent automatically by the MMTA mail transfer program.
+
+Best,
+Postmaster at ${HOSTNAME}
+@EOF@
+}
+
 [ -x $MMDA ] || die 1 "Mail delivery program $MMDA not executable."
 
 # Mail errors to sender by default
@@ -395,35 +429,49 @@ while [ -n "$ALIST" ]; do
     if contains "$LOCAL_SENT" "$R" ; then
         continue
     fi
+    LOGTEMP=$(tempfile -p mmta-)
+    [ "$?" = "0" ] || die 1 "Could not create a temporary file"
     if [ "$SEND_INET" = "0" ] ; then
         # We can send external mail, do not use the recipients mail
         # queue, get local and external addresses from recipients
         # .forward and deliver to rest of the .forward targets.
-        FWDLIST=$(cat $TEMPF | $MMDA --no-queue $R)
-        ECODE=$?
-        # FIXME: Do more nuanced error handling based on mmda exit codes
-        if [ $ECODE != "0" ] ; then
-            complain "Local delivery from $(whoami) to $R failed"
-            complain "'$MMDA --no-queue $R' exit code $ECODE"
-            FAILED_USERS=$(append "$FAILED_USERS" "$R")
-        fi
+        FWDLIST=$(cat $TEMPF | $MMDA --no-external $R 2> $LOGTEMP)
+        MMDA_ECODE=$?
     else
         # We cannot send external mail, get local addresses from recipients
         # .forward and deliver to external addresses by running recipients
         # 'queue-mail' script. Also deliver to rest of the .forward targets.
-        FWDLIST=$(cat $TEMPF | $MMDA $R)
-        ECODE=$?
-        # FIXME: Do more nuanced error handling based on mmda exit codes
-        if [ $ECODE != "0" ] ; then
-            complain "Delivery from $(whoami) to $R failed"
-            complain "'$MMDA $R' exit code $ECODE"
-            FAILED_USERS=$(append "$FAILED_USERS" "$R")
-        fi
+        FWDLIST=$(cat $TEMPF | $MMDA $R 2> $LOGTEMP)
+        MMDA_ECODE=$?
         FORWARDERS=$(append "$FORWARDERS" "$R")
     fi
+    complain $(cat $LOGTEMP)
+    rm -f $LOGTEMP
     FWDLIST=$(echo $FWDLIST | sed -n '1h;1!H;${;g;s/\n/,/g;p;}')
     ALIST=$(append "$FWDLIST" "$ALIST")
     LOCAL_SENT=$(append "$LOCAL_SENT" "$R")
+    case "$MMDA_ECODE" in
+        "0")
+            # Success.
+            true
+            ;;
+        "$E_MMDA_NODELIVR"|"$E_MMDA_UMBXFAIL")
+            # Complete failure, or user mbox could not be delivered to.
+            complain "Delivery from $(whoami) to $R failed"
+            complain "$MMDA exit code $MMDA_ECODE"
+            FAILED_USERS=$(append "$FAILED_USERS" "$R")
+            ;;
+        "$E_MMDA_MBOXFAIL"|"$E_MMDA_FILEFAIL"|"$E_MMDA_PIPEFAIL"|"$E_MMDA_QFAIL")
+            # Fails in forward file targets.
+            complain "Some .forward targets of user $R failed."
+            complain "$MMDA exit code $MMDA_ECODE"
+            forwardfail_mail "$R" "$MMDA_ECODE"
+            ;;
+        *)
+            complain "Unknown error in delivery from $(whoami) to $R"
+            complain "$MMDA exit code $MMDA_ECODE"
+            ;;
+    esac
 done
 
 INET_RECV=$(echo -n ${INET_RECV} | tr ',' '\n' | sort | uniq | tr '\n' ',')
@@ -441,7 +489,8 @@ if [ "$SEND_INET" = "0" ] ; then
 else
     if [ -n "$INET_RECV" ] ; then
         # Original recipients had external addresses, but we cannot send.
-        complain "Warning: Could not send to following external addresses: $INET_RECV"
+        FAILED_USERS=$(append "$FAILED_USERS" "$INET_RECV")
+        complain "Warning: $USER could not send to following external addresses: $INET_RECV"
     fi
     if is_online ; then
         # Run outgoing queues from people who were sent mail
@@ -452,6 +501,26 @@ else
             $MMTASQ $A
         done ) & # FIXME: disown?
     fi
+fi
+
+if [ -n "$FAILED_USERS" ] && [ "$MAIL_ERRORS" = "1" ] ; then
+    $MMDA "$USER" <<@EOF@
+From: MMTA mail system <postmaster@localhost>
+To: ${USER}
+Subject: Failures in delivery of your mail
+
+Dear ${USER},
+
+There were problems delivering your mail to the following addresses:
+
+${FAILED_USERS}
+
+This message has been sent automatically by the MMTA mail transfer program.
+
+Best,
+Postmaster at ${HOSTNAME}
+@EOF@
+
 fi
 
 rm -f $TEMPF

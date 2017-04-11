@@ -1,0 +1,36 @@
+MMTA-SEND-QUEUE(8)
+==================
+
+NAME
+----
+mmta-send-queue - Runs mmta's send-queue action for a given user.
+
+SYNOPSIS
+--------
+mmta-send-queue <username>
+
+DESCRIPTION
+-----------
+mmta-send-queue changes to the user given as the first argument and
+runs the 'send-queue' script of that user. For the user change to
+work with normal user privileges, mmta-send-queue needs to be installed
+with setuid root.
+
+The 'send-queue' script can be either a user supplied one at
+'$HOME/.config/mmta/send-queue', or the mmta default given in
+'/etc/mmta/send-queue'.
+
+EXIT STATUS
+-----------
+0::
+	Successful execution.
+
+
+CONFIGURATION FILES
+-------------------
+$HOME/.config/mmta/send-queue
+/etc/mmta/send-queue
+
+SEE ALSO
+--------
+mmda(8), sendmail(8), dotlockfile(1)

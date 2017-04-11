@@ -1,0 +1,73 @@
+ALIASES(5)
+==========
+
+NAME
+----
+aliases - aliases file for mmta
+
+DESCRIPTION
+-----------
+This manual page describes the format of the aliases file, as used by
+mmta(7). The aliases file can be used to forward mail sent to an alias
+address to a local user, or a group of local users.
+
+The aliases file is comprised of logical lines of the format
+
+    key: value1, value2, ...
+
+A logical line can be broken into more than one physical lines by
+ending the physical line with the `\´ character.
+
+    key: value1, \
+    value2, ...
+
+Lines starting with `#´ are considered to be comments and ignored.
+
+Here `key´ is the name of the alias, which makes it also a valid local
+mail address. During alias processing, the key is recursively expanded
+to the values listed after the colon. A single value can be either a
+local user name, or another alias definition.
+
+Some Unix mail systems also support defining other types of alias
+values, similar to the forward(5) mechanism.  These include appending to
+files, piping to commands, using the `:include:´ alias to read alias
+definitions from another file, forwarding to external email addresses,
+returning error codes and delivering to maildirs. The mmta mail system
+does not support these types of values, but does recognize them.  A
+warning message is emitted when these unsupported alias definitions are
+seen. See the aliases(5) manual page from the OpenSMTPD project
+(https://www.opensmtpd.org/manual.html) for more details on these more
+complex aliases files.
+
+EXAMPLES
+--------
+Debian usually has an /etc/aliases file similar to following, after
+installation:
+
+    # /etc/aliases
+    mailer-daemon: postmaster
+    postmaster: root
+    nobody: root
+    hostmaster: root
+    usenet: root
+    news: root
+    webmaster: root
+    www: root
+    ftp: root
+    abuse: root
+    noc: root
+    security: root
+    root: user
+
+Here `user´ is the username of the mandatory user account configured during
+installation. This aliases file forwards all mail to the system users to
+root and finally mail to root is sent to the account `user´.
+
+FILES
+-----
+/etc/aliases        Default aliases file.
+
+SEE ALSO
+--------
+forward(5), mmta(7), sendmail(8), mmda(8), mmta-send-queue(8)
+

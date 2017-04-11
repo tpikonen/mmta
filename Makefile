@@ -44,8 +44,11 @@ mmda: mmda.c mmta-common.o
 mmta-send-queue: mmta-send-queue.c mmta-common.o
 	gcc -o mmta-send-queue mmta-send-queue.c mmta-common.o $(CPPFLAGS) $(CFLAGS) $(LDFLAGS)
 
-%.5 : %.5.txt
-%.8 : %.8.txt
+aliases.5 : aliases.5.txt
+forward.5 : forward.5.txt
+mmta.7 : mmta.7.txt
+mmda.8 : mmda.8.txt
+sendmail.8 : sendmail.8.txt
 $(manpages) :
 	[ -x /usr/bin/a2x ] && a2x -f manpage $@.txt \
 		|| printf "***\n*** Asciidoc /usr/bin/a2x not found\n***\n" ;\

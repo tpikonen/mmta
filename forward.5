@@ -1,0 +1,87 @@
+'\" t
+.\"     Title: forward
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 04/29/2017
+.\"    Manual: \ \&
+.\"    Source: \ \&
+.\"  Language: English
+.\"
+.TH "FORWARD" "5" "04/29/2017" "\ \&" "\ \&"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+forward \- email forwarding information file for mmda(8)
+.SH "DESCRIPTION"
+.sp
+The \&.forward file in a users home directory contains a list of mail addresses, mailbox files or programs that the users mail should be redirected to\&. If this file does not exist, mail will not be forwarded, but is instead delivered to users default mailbox at /var/mail/user\&.
+.sp
+Each line in a \&.forward file is a separate delivery target\&. Lines starting with the `#\(aa character are considered to be comments and ignored\&. The following types of targets are supported by mmda(8):
+.PP
+user
+.RS 4
+(Here `user\(aa means your username) Mail is delivered to the receiving users default mbox file at /var/mail/user\&. See below for handling of a backslash prefix\&.
+.RE
+.PP
+local_address
+.RS 4
+Mail is forwarded to another local user, who may then forward it further using another \&.forward file\&.
+.RE
+.PP
+address@otherhost
+.RS 4
+A line containing the `@\(aa character is interpreted as an external email address, and the mail is sent there\&.
+.RE
+.PP
+/path/to/file
+.RS 4
+Mail is delivered to a given mbox\-file\&. The mbox\-file targets must begin with a forward slash `/\(aa\&.
+.RE
+.PP
+"|/path/to/program plus args"
+.RS 4
+A line starting with a pipe character `|\(aa is considered to be an executable program followed by optional arguments\&. The mail is piped to this program for processing\&. Traditionally the whole command, including the pipe character is enclosed with quotation marks, either single or double quotes\&. With mmda the quotes are optional\&.
+.RE
+.sp
+Some mail delivery implementations give a special meaning to lines prefixed by the backslash character `\e\(aa and stop further processing of the \&.forward file if a local address is prefixed by a backslash\&. The mmda(8) mail delivery program filters out backslash characters and proceeds to process the complete \&.forward file\&.
+.sp
+If the \&.forward file is being edited during attempted mail delivery, the delivery might fail if the \&.forward file is not fully written\&. It is best to copy the \&.forward file to a temporary file, edit this file and then rename the temporary file to \&.forward atomically using the mv(1) command\&.
+.SH "EXAMPLES"
+.sp
+For example, if a \&.forward file contained the following lines:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+nobody@debian\&.org
+"|/usr/bin/vacation nobody"
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Mail would be forwarded to the external address <nobody@debian\&.org> and piped as standard input to the program /usr/bin/vacation with the single argument nobody\&.
+.SH "FILES"
+.sp
+~/\&.forward Email forwarding information\&.
+.SH "SEE ALSO"
+.sp
+aliases(5), mmta(7), sendmail(8), mmda(8), mmta\-send\-queue(8)

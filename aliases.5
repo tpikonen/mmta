@@ -1,0 +1,99 @@
+'\" t
+.\"     Title: aliases
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 03/15/2017
+.\"    Manual: \ \&
+.\"    Source: \ \&
+.\"  Language: English
+.\"
+.TH "ALIASES" "5" "03/15/2017" "\ \&" "\ \&"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+aliases \- aliases file for mmta
+.SH "DESCRIPTION"
+.sp
+This manual page describes the format of the aliases file, as used by mmta(7)\&. The aliases file can be used to forward mail sent to an alias address to a local user, or a group of local users\&.
+.sp
+The aliases file is comprised of logical lines of the format
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+key: value1, value2, \&.\&.\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+A logical line can be broken into more than one physical lines by ending the physical line with the `\e\(aa character\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+key: value1, \e
+value2, \&.\&.\&.
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Lines starting with `#\(aa are considered to be comments and ignored\&.
+.sp
+Here `key\(aa is the name of the alias, which makes it also a valid local mail address\&. During alias processing, the key is recursively expanded to the values listed after the colon\&. A single value can be either a local user name, or another alias definition\&.
+.sp
+Some Unix mail systems also support defining other types of alias values, similar to the forward(5) mechanism\&. These include appending to files, piping to commands, using the `:include:\(aa alias to read alias definitions from another file, forwarding to external email addresses, returning error codes and delivering to maildirs\&. The mmta mail system does not support these types of values, but does recognize them\&. A warning message is emitted when these unsupported alias definitions are seen\&. See the aliases(5) manual page from the OpenSMTPD project (https://www\&.opensmtpd\&.org/manual\&.html) for more details on these more complex aliases files\&.
+.SH "EXAMPLES"
+.sp
+Debian usually has an /etc/aliases file similar to following, after installation:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# /etc/aliases
+mailer\-daemon: postmaster
+postmaster: root
+nobody: root
+hostmaster: root
+usenet: root
+news: root
+webmaster: root
+www: root
+ftp: root
+abuse: root
+noc: root
+security: root
+root: user
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Here `user\(aa is the username of the mandatory user account configured during installation\&. This aliases file forwards all mail to the system users to root and finally mail to root is sent to the account `user\(aa\&.
+.SH "FILES"
+.sp
+/etc/aliases Default aliases file\&.
+.SH "SEE ALSO"
+.sp
+forward(5), mmta(7), sendmail(8), mmda(8), mmta\-send\-queue(8)

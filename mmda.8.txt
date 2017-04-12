@@ -7,7 +7,7 @@ mmda - a minimal mail delivery agent
 
 SYNOPSIS
 --------
-mmda [deliver | forward] <username>
+mmda [--no-external] [--force-mbox] <username>
 
 DESCRIPTION
 -----------
@@ -16,43 +16,48 @@ mmda is a local delivery helper program for the mmta mail transfer agent.
 It needs to store messages to the mailboxes and maildirs of the receiving
 user and thus should be installed setuid root.
 
-mmda reads an email message from standard input and delivers it to a
-given local user honoring the users .forward file.
+mmda reads an email message from standard input and delivers it to a given
+local user with the targets given in the users .forward file (see forward(5)).
 The addresses to which messages could not be delivered are printed to standard
 output and should be taken care of by then higher level program, i.e. mmta.
 
-SUBCOMMANDS
------------
-deliver::
-	Delivers mail to a local user honoring the contents of users
-	.forward file. If the message is forwarded to an external host
-	(i.e. .forward contains a line of type user@external.org), then
-	the message is put into the mail queue of the user using the
-	external 'queue-mail' command (or script) which is read from
-	either local or global configuration directory.
-	Local delivery is made to an mbox-style local mailbox
-	to /var/mail/username. If this mailbox does not exist, it is created.
+OPTIONS
+-------
+--no-external::
+    Delivery is made to local targets, but if .forward processing results
+    in external mail addresses (e.g. recipient@host.com), this address
+    is printed to standard output for processing by higher level tools.
+    The default, when this option is not given, is to store the message
+    to the outgoing mail-queue of <username>.
 
-forward::
-	Same as 'deliver', but an attempt at sending the mail queue of the
-	receiving user is made immediately after delivery.
+--force-mbox::
+	Delivery is made as usual, but the message is also placed to the users
+    default mailbox at /var/mail/username. If this mailbox does not exist,
+    it is created.
 
 EXIT STATUS
 -----------
 0::
 	Successful execution.
 
-1::
-	Wrong number of command line arguments given.
-
-2::
-	<username> is a privileged user (uid < 1000).
-
 3::
-	<username> is invalid.
+	`queue-mail´ script failed
 
 4::
-	Dropping of root privileges was not successful.
+	Could not deliver to a piped command in .forward.
+
+5::
+	Could not deliver to a filename given in .forward.
+
+6::
+	Could not deliver to a mbox given in .forward.
+
+7::
+    Could not deliver to a mbox in /var/mail/<username>. Other
+    .forward targets may have been delivered into.
+
+8::
+	No delivery could be made.
 
 CONFIGURATION FILES
 -------------------
@@ -65,4 +70,4 @@ $HOME/.config/mmta/send-queue
 
 SEE ALSO
 --------
-forward(5), sendmail(8), safecat(1), dotlockfile(1)
+forward(5), sendmail(8), mmta(7), mmta-send-queue(8)

@@ -26,6 +26,7 @@ E_MMDA_QFAIL=3      # 'queue-mail' script failed
 # Print and log a string
 complain ()
 {
+    [ -z "$1" ] && return 0
     logger -t mmta "$1"
     echo "$1" >&2
 }

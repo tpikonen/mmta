@@ -4,9 +4,11 @@
 # License: GPLv3+
 
 scriptname=$0
+verbose=0
 
 die () {
-    logger -t mmta $scriptname: $2
+    [ "$verbose" = "1" ] || exit $1
+    logger -t mmta "$scriptname: $2"
     exit $1
 }
 

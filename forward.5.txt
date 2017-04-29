@@ -1,0 +1,80 @@
+FORWARD(5)
+==========
+
+NAME
+----
+forward - email forwarding information file for mmda(8)
+
+DESCRIPTION
+-----------
+The .forward file in a users home directory contains a list of mail
+addresses, mailbox files or programs to which the users mail should be
+redirected to. If this file does not exist, mail will not be forwarded,
+but is instead delivered to the users default mailbox at /var/mail/user.
+
+Before processing, the type and permissions of the .forward file are
+checked. The .forward file should be a regular file, owned by either the
+user or root and should not be group or world writable. If these
+conditions are not met, mail is delivered only to the users default
+mailbox.
+
+Each line in a .forward file is a separate delivery target.  Lines
+starting with the `#´ character are considered to be comments and
+ignored. The following types of targets are supported by mmda(8):
+
+user::
+    (Here `user´ means your username) Mail is delivered to the receiving
+    users default mbox file at /var/mail/user. See below for handling of
+    a backslash prefix.
+
+local_address::
+    Mail is forwarded to another local user, who may then forward it
+    further using another .forward file.
+
+address@otherhost::
+    A line containing the `@´ character is interpreted as an external
+    email address, and the mail is sent there.
+
+/path/to/file::
+    Mail is delivered to a given mbox-file. The mbox-file targets must
+    begin with a forward slash `/´.
+
+"|/path/to/program plus args"::
+    A line starting with a pipe character `|´ is considered to be an
+    executable program followed by optional arguments. The mail is
+    piped to this program for processing. Traditionally the whole
+    command, including the pipe character is enclosed with quotation
+    marks, either single or double quotes. With mmda the quotes are
+    optional.
+
+Some mail delivery implementations give a special meaning to lines
+prefixed by the backslash character `\´ and stop further processing of
+the .forward file if a local address is prefixed by a backslash. The
+mmda(8) mail delivery program filters out backslash characters and
+proceeds to process the complete .forward file.
+
+If the .forward file is being edited during attempted mail delivery, the
+delivery might fail if the .forward file is not fully written.  It is
+best to copy the .forward file to a temporary file, edit this file and
+then rename the temporary file to .forward atomically using the mv(1)
+command.
+
+EXAMPLES
+--------
+For example, if a .forward  file contained the following lines:
+
+    nobody@debian.org
+    "|/usr/bin/vacation nobody"
+
+Mail would  be forwarded to the external address <nobody@debian.org> and
+piped as standard input to the program /usr/bin/vacation with the single
+argument nobody.
+
+FILES
+-----
+~/.forward      Email forwarding information.
+
+SEE ALSO
+--------
+aliases(5), mmta(7), sendmail(8), mmda(8), mmta-send-queue(8)
+

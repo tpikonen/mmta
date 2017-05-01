@@ -1,3 +1,10 @@
+mmta (0.0.6-1) UNRELEASED; urgency=low
+
+  * mmda rewrite and new API, more manpages plus other improvements,
+    see git log for details.
+
+ -- Teemu Ikonen <tpikonen@gmail.com>  Mon, 01 May 2017 19:38:58 +0300
+
 mmta (0.0.5-1) UNRELEASED; urgency=low
 
   * Improvements, see git log for details.

@@ -17,7 +17,7 @@ HEADER="X-mmta-envelope-to:"
 [ -r $HOME/.msmtprc ] || die 1 "$HOME/.msmtprc is not readable."
 [ -d $MAILDIR ] || die 1 "Mail queue $MAILDIR does not exist."
 
-HOST=$(sed -n 's/^host\s\s*\(.*\)/\1/p' $HOME/.msmtprc)
+HOST=$(sed -n 's/^host\s\s*\(.*\)/\1/p' $HOME/.msmtprc | head -n1)
 ping -c 1 -w 2 $HOST > /dev/null 2>&1 || die 0 "Could not reach mailhost $HOST"
 
 dotlockfile -p "$MAILDIR/lock" || die 1 "Could not lock maildir $MAILDIR"

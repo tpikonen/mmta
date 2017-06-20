@@ -1,6 +1,6 @@
 #!/bin/sh
 # Script to send messages from users mail queue via msmtp
-# Copyright: 2008-2013 Teemu Ikonen <tpikonen@gmail.com>
+# Copyright: 2008-2017 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
 scriptname=$0

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Script to check if msmtp can send mail
-# Copyright: 2008-2013 Teemu Ikonen <tpikonen@gmail.com>
+# Copyright: 2008-2017 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
 scriptname=$0

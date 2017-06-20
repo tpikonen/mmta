@@ -10,16 +10,16 @@ die () {
     exit $1
 }
 
-MAILDIR="/var/mail/$(whoami).mailq"
-[ -d $MAILDIR ] || die 1 "Mail queue $MAILDIR does not exist."
+SPOOLDIR=/var/spool/mmta
+QUEUEDIR="${SPOOLDIR}/$(whoami)"
 
-MTMP="$MAILDIR/tmp"
-MNEW="$MAILDIR/new"
+MTMP="$QUEUEDIR/tmp"
+MNEW="$QUEUEDIR/new"
 HEADER="X-mmta-envelope-to:"
 
 mkdir -p $MTMP
 mkdir -p $MNEW
-mkdir -p "$MAILDIR/cur"
+mkdir -p "$QUEUEDIR/cur"
 
 (echo -n "$HEADER "
 echo -n "$1" ; shift

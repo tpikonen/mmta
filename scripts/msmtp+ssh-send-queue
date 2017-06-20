@@ -1,5 +1,5 @@
 #!/bin/sh
-# Script to send messages from a mailqueue via msmtp through ssh tunnel
+# Script to send messages from users mail queue via msmtp through ssh tunnel
 # Copyright: 2011-2013 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
@@ -10,25 +10,26 @@ die () {
     exit $1
 }
 
-MAILDIR="/var/mail/$(whoami).mailq"
+SPOOLDIR=/var/spool/mmta
+QUEUEDIR="${SPOOLDIR}/$(whoami)"
 HEADER="X-mmta-envelope-to:"
 
 [ -x /usr/bin/msmtp ] || die 1 "/usr/bin/msmtp does not exist."
 [ -r $HOME/.msmtprc ] || die 1 "$HOME/.msmtprc is not readable."
-[ -d $MAILDIR ] || die 1 "Mail queue $MAILDIR does not exist."
+[ -d $QUEUEDIR ] || die 1 "Mail queue $QUEUEDIR does not exist."
 
 ssh -N -i $HOME/.ssh/id_rsa user@forward.com -L 11587:smtp.gmail.com:587 > /dev/null &
 SSH_PID=$!
 sleep 3
 if [ -d /proc/$SSH_PID ]; then
-    dotlockfile -p "$MAILDIR/lock" || exit 1
-    for M in $(find $MAILDIR/new $MAILDIR/cur -type f) ; do
+    dotlockfile -p "$QUEUEDIR/lock" || exit 1
+    for M in $(find $QUEUEDIR/new $QUEUEDIR/cur -type f) ; do
         RECIPIENTS=$(head -n 1 $M | sed -n "s/^$HEADER//p" | tr ',' ' ')
         if tail -n +2 $M | /usr/bin/msmtp -- $RECIPIENTS ; then
 	    rm -f $M
         fi
-        dotlockfile -t "$MAILDIR/lock"
+        dotlockfile -t "$QUEUEDIR/lock"
     done
-    dotlockfile -u "$MAILDIR/lock"
+    dotlockfile -u "$QUEUEDIR/lock"
     kill $SSH_PID
 fi

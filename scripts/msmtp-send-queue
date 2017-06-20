@@ -1,5 +1,5 @@
 #!/bin/sh
-# Script to send messages from a mailqueue via msmtp
+# Script to send messages from users mail queue via msmtp
 # Copyright: 2008-2013 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
@@ -10,22 +10,23 @@ die () {
     exit $1
 }
 
-MAILDIR="/var/mail/$(whoami).mailq"
+SPOOLDIR=/var/spool/mmta
+QUEUEDIR="${SPOOLDIR}/$(whoami)"
 HEADER="X-mmta-envelope-to:"
 
 [ -x /usr/bin/msmtp ] || die 1 "/usr/bin/msmtp does not exist."
 [ -r $HOME/.msmtprc ] || die 1 "$HOME/.msmtprc is not readable."
-[ -d $MAILDIR ] || die 1 "Mail queue $MAILDIR does not exist."
+[ -d $QUEUEDIR ] || die 1 "Mail queue $QUEUEDIR does not exist."
 
 HOST=$(sed -n 's/^host\s\s*\(.*\)/\1/p' $HOME/.msmtprc | head -n1)
 ping -c 1 -w 2 $HOST > /dev/null 2>&1 || die 0 "Could not reach mailhost $HOST"
 
-dotlockfile -p "$MAILDIR/lock" || die 1 "Could not lock maildir $MAILDIR"
-for M in $(find $MAILDIR/new $MAILDIR/cur -type f 2> /dev/null) ; do
-    RECIPIENTS=$(head -n 1 $M | sed -n "s/^$HEADER//p" | tr ',' ' ') 
+dotlockfile -p "$QUEUEDIR/lock" || die 1 "Could not lock maildir $QUEUEDIR"
+for M in $(find $QUEUEDIR/new $QUEUEDIR/cur -type f 2> /dev/null) ; do
+    RECIPIENTS=$(head -n 1 $M | sed -n "s/^$HEADER//p" | tr ',' ' ')
     if tail -n +2 $M | /usr/bin/msmtp -- $RECIPIENTS ; then
 	rm -f $M
     fi
-    dotlockfile -t "$MAILDIR/lock"
+    dotlockfile -t "$QUEUEDIR/lock"
 done
-dotlockfile -u "$MAILDIR/lock"
+dotlockfile -u "$QUEUEDIR/lock"

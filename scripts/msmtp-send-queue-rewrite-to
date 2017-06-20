@@ -1,5 +1,5 @@
 #!/bin/sh
-# Script to send messages from a mailqueue via msmtp
+# Script to send messages from users mail queue via msmtp
 # Copyright: 2008-2013 Teemu Ikonen <tpikonen@gmail.com>
 # License: GPLv3+
 
@@ -10,12 +10,13 @@ die () {
     exit $1
 }
 
-MAILDIR="/var/mail/$(whoami).mailq"
+SPOOLDIR=/var/spool/mmta
+QUEUEDIR="${SPOOLDIR}/$(whoami)"
 HEADER="X-mmta-envelope-to:"
 
 [ -x /usr/bin/msmtp ] || die 1 "/usr/bin/msmtp does not exist."
 [ -r $HOME/.msmtprc ] || die 1 "$HOME/.msmtprc is not readable."
-[ -d $MAILDIR ] || die 1 "Mail queue $MAILDIR does not exist."
+[ -d $QUEUEDIR ] || die 1 "Mail queue $QUEUEDIR does not exist."
 
 HOST=$(sed -n 's/^host\s\s*\(.*\)/\1/p' $HOME/.msmtprc)
 ping -c 1 -w 2 $HOST > /dev/null 2>&1 || die 0 "Could not reach mailhost $HOST"
@@ -23,9 +24,9 @@ ping -c 1 -w 2 $HOST > /dev/null 2>&1 || die 0 "Could not reach mailhost $HOST"
 LOCALTO=$(whoami)
 INET_TO=$(sed -n 's/^from\s\s*\(.*\)/\1/p' $HOME/.msmtprc)
 
-dotlockfile -p "$MAILDIR/lock" || exit 1
-for M in $(find $MAILDIR/new $MAILDIR/cur -type f 2> /dev/null) ; do
-    RECIPIENTS=$(head -n 1 $M | sed -n "s/^$HEADER//p" | tr ',' ' ') 
+dotlockfile -p "$QUEUEDIR/lock" || exit 1
+for M in $(find $QUEUEDIR/new $QUEUEDIR/cur -type f 2> /dev/null) ; do
+    RECIPIENTS=$(head -n 1 $M | sed -n "s/^$HEADER//p" | tr ',' ' ')
 # FIXME: sed cmd below can make To: header line too long
     if echo $RECIPIENTS | grep -q $INET_TO ; then
         if tail -n +2 $M |  sed -e "s/^\(To:.*\)$/\1, ${INET_TO}/" \
@@ -37,6 +38,6 @@ for M in $(find $MAILDIR/new $MAILDIR/cur -type f 2> /dev/null) ; do
             rm -f $M
         fi
     fi
-    dotlockfile -t "$MAILDIR/lock"
+    dotlockfile -t "$QUEUEDIR/lock"
 done
-dotlockfile -u "$MAILDIR/lock"
+dotlockfile -u "$QUEUEDIR/lock"

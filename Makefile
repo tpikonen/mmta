@@ -50,7 +50,7 @@ mmta.7 : mmta.7.txt
 mmda.8 : mmda.8.txt
 sendmail.8 : sendmail.8.txt
 $(manpages) :
-	[ -x /usr/bin/a2x ] && a2x -f manpage $@.txt
+	[ -x /usr/bin/a2x ] && a2x -f manpage --no-xmllint $@.txt
 
 clean:
 	-rm -f mmda mmta-send-queue mmta-common.o sendmail

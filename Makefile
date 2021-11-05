@@ -50,8 +50,7 @@ mmta.7 : mmta.7.txt
 mmda.8 : mmda.8.txt
 sendmail.8 : sendmail.8.txt
 $(manpages) :
-	[ -x /usr/bin/a2x ] && a2x -f manpage $@.txt \
-		|| printf "***\n*** Asciidoc /usr/bin/a2x not found\n***\n" ;\
+	[ -x /usr/bin/a2x ] && a2x -f manpage $@.txt
 
 clean:
 	-rm -f mmda mmta-send-queue mmta-common.o sendmail

@@ -13,7 +13,7 @@ DESCRIPTION
 -----------
 Minimal Mail Transfer Agent (MMTA) is an implementation of the sendmail(1)
 command intended for desktop and embedded systems and servers which only need
-tosend mail.  It can do local mail delivery using mmda(1) and send mail to
+to send mail.  It can do local mail delivery using mmda(1) and send mail to
 external hosts via external programs like msmtp(1). Since MMTA does not
 function as a daemon, mail cannot be received from outside. MMTA implements
 most, but not all, command line options specified in the LSB sendmail

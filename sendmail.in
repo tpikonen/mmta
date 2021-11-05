@@ -304,7 +304,7 @@ mechanism. Please check your mail forwarding.
 This message has been sent automatically by the MMTA mail transfer program.
 
 Best,
-Postmaster at ${HOSTNAME}
+Postmaster at $(hostname)
 @EOF@
 }
 

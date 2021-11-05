@@ -2,12 +2,12 @@
 .\"     Title: forward
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 04/29/2017
+.\"      Date: 11/05/2021
 .\"    Manual: \ \&
 .\"    Source: \ \&
 .\"  Language: English
 .\"
-.TH "FORWARD" "5" "04/29/2017" "\ \&" "\ \&"
+.TH "FORWARD" "5" "11/05/2021" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -31,7 +31,9 @@
 forward \- email forwarding information file for mmda(8)
 .SH "DESCRIPTION"
 .sp
-The \&.forward file in a users home directory contains a list of mail addresses, mailbox files or programs that the users mail should be redirected to\&. If this file does not exist, mail will not be forwarded, but is instead delivered to users default mailbox at /var/mail/user\&.
+The \&.forward file in a users home directory contains a list of mail addresses, mailbox files or programs to which the users mail should be redirected to\&. If this file does not exist, mail will not be forwarded, but is instead delivered to the users default mailbox at /var/mail/user\&.
+.sp
+Before processing, the type and permissions of the \&.forward file are checked\&. The \&.forward file should be a regular file, owned by either the user or root and should not be group or world writable\&. If these conditions are not met, mail is delivered only to the users default mailbox\&.
 .sp
 Each line in a \&.forward file is a separate delivery target\&. Lines starting with the `#\(aa character are considered to be comments and ignored\&. The following types of targets are supported by mmda(8):
 .PP

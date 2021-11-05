@@ -2,12 +2,12 @@
 .\"     Title: mmda
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
-.\"      Date: 03/15/2017
+.\"      Date: 11/05/2021
 .\"    Manual: \ \&
 .\"    Source: \ \&
 .\"  Language: English
 .\"
-.TH "MMDA" "8" "03/15/2017" "\ \&" "\ \&"
+.TH "MMDA" "8" "11/05/2021" "\ \&" "\ \&"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -31,7 +31,7 @@
 mmda \- a minimal mail delivery agent
 .SH "SYNOPSIS"
 .sp
-mmda [\-\-no\-queue] [\-\-force\-mbox] <username>
+mmda [\-\-no\-external] [\-\-force\-mbox] <username>
 .SH "DESCRIPTION"
 .sp
 mmda is a local delivery helper program for the mmta mail transfer agent\&. It needs to store messages to the mailboxes and maildirs of the receiving user and thus should be installed setuid root\&.
@@ -39,7 +39,7 @@ mmda is a local delivery helper program for the mmta mail transfer agent\&. It n
 mmda reads an email message from standard input and delivers it to a given local user with the targets given in the users \&.forward file (see forward(5))\&. The addresses to which messages could not be delivered are printed to standard output and should be taken care of by then higher level program, i\&.e\&. mmta\&.
 .SH "OPTIONS"
 .PP
-\-\-no\-queue
+\-\-no\-external
 .RS 4
 Delivery is made to local targets, but if \&.forward processing results in external mail addresses (e\&.g\&.
 recipient@host\&.com), this address is printed to standard output for processing by higher level tools\&. The default, when this option is not given, is to store the message to the outgoing mail\-queue of <username>\&.

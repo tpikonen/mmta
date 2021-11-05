@@ -13,7 +13,7 @@ complain ()
 
 SPOOLDIR=/var/spool/mmta
 
-for USER in $(find "${SPOOLDIR}/" -type d | sed -n 's,.*/\(.*[^/]\)$,\1,p')
+for USER in $(ls -d "${SPOOLDIR}"/* | sed -n 's,.*/\(.*[^/]\)$,\1,p')
 do
     /usr/lib/mmta/mmta-send-queue $USER \
         || complain "$0: 'mmta-send-queue $USER' failed with exit code $?"

@@ -69,6 +69,13 @@ int main(int argc, char *argv[])
         exit(14); // could not drop privilegdes
     }
 
+    /* chdir to somewhere where dotlockfile can open '.' */
+    if(chdir(homedir) != 0) {
+        fprintf(stderr, "mmta-send-queue: Could not chdir to homedir %s.", \
+            homedir);
+        exit(15); // could not chdir to homedir
+    }
+
     char *sargv[SLEN];
     char script[PATH_MAX];
     int status;

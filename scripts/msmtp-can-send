@@ -15,7 +15,7 @@ die () {
 SPOOLDIR=/var/spool/mmta
 QUEUEDIR="${SPOOLDIR}/$(whoami)"
 [ -x /usr/bin/msmtp ] || die 1 "/usr/bin/msmtp does not exist."
-[ -r $HOME/.msmtprc ] || die 1 "$HOME/.msmtprc is not readable."
-[ -d $QUEUEDIR ] || die 1 "Maildir $QUEUEDIR does not exist."
+[ -r "$HOME/.msmtprc" ] || die 1 "$HOME/.msmtprc is not readable."
+[ -d "$QUEUEDIR" ] || die 1 "Maildir $QUEUEDIR does not exist."
 
 echo "" | /usr/bin/msmtp -P 2>&1 > /dev/null

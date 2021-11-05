@@ -369,7 +369,7 @@ for PAR in $@ ; do
     RECIPIENTS="$RECIPIENTS,$PAR"
 done
 
-TEMPF=$(tempfile -p mmta-)
+TEMPF=$(mktemp --tmpdir mmta-XXXXXX)
 [ "$?" = "0" ] || die 1 "Could not create a temporary file"
 
 cat >> $TEMPF
@@ -430,7 +430,7 @@ while [ -n "$ALIST" ]; do
     if contains "$LOCAL_SENT" "$R" ; then
         continue
     fi
-    LOGTEMP=$(tempfile -p mmta-)
+    LOGTEMP=$(mktemp --tmpdir mmta-log-XXXXXX)
     [ "$?" = "0" ] || die 1 "Could not create a temporary file"
     if [ "$SEND_INET" = "0" ] ; then
         # We can send external mail, do not use the recipients mail

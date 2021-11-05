@@ -258,9 +258,8 @@ int main(int argc, char *argv[])
     struct passwd *userinfo;
     uid_t uid;
     char *uname;
+    const char *homedir, *shell;
     char callername[SLEN];
-    char shell[SLEN];
-    char homedir[PATH_MAX];
     char fwdname[PATH_MAX];
     int no_external, force_mbox;
     int i;
@@ -304,10 +303,8 @@ int main(int argc, char *argv[])
 #endif
         exit(E_MMDA_NODELIVR);
     }
-    strncpy(shell, userinfo->pw_shell, SLEN-1);
-    shell[SLEN-1] = '\0';
-    strncpy(homedir, userinfo->pw_dir, PATH_MAX-1);
-    homedir[PATH_MAX-1] = '\0';
+    shell = userinfo->pw_shell;
+    homedir = userinfo->pw_dir;
     /* Check if user is ok to receive mail */
     if(!checkshell(shell)) {
         fprintf(stderr, "mmda: Receiver %s not allowed to log in, exiting.", \

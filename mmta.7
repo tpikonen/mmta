@@ -1,0 +1,43 @@
+'\" t
+.\"     Title: mmta
+.\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 11/05/2021
+.\"    Manual: \ \&
+.\"    Source: \ \&
+.\"  Language: English
+.\"
+.TH "MMTA" "7" "11/05/2021" "\ \&" "\ \&"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+mmta \- a minimal mail transfer agent
+.SH "SYNOPSIS"
+.sp
+mmta aims to be a minimal set of programs for implementing local and outgoing mail delivery and transfer in a unix system\&. It can not be used to accept incoming mail\&.
+.SH "DESCRIPTION"
+.sp
+TBD\&.
+.SH "CONFIGURATION FILES"
+.sp
+$HOME/\&.config/mmta/can\-send $HOME/\&.config/mmta/queue\-mail $HOME/\&.config/mmta/send\-queue /etc/mmta/can\-send /etc/mmta/queue\-mail /etc/mmta/send\-queue
+.SH "SEE ALSO"
+.sp
+sendmail(8), mmda(8), mmta\-send\-queue(8), aliases(5), forward(5)
